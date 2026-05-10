@@ -181,12 +181,7 @@ Update your `opencode.json` file to point to your local 9router instance:
 
 Equip your OpenCode agents with web search and up-to-date documentation scraping. Add the desired tools to your `opencode.json`.
 
-**Option A: Default Exa Search** (May occasionally be blocked by bot-protection)
-```bash
-OPENCODE_ENABLE_EXA=1 opencode
-```
-
-**Option B: MCP `searchfetch` & `context7`** (Recommended for human-like scraping and latest docs)
+**MCP `searchfetch` & `context7`** (Recommended for human-like scraping and latest docs)
 ```json
 {
   "$schema": "https://opencode.ai/config.json",

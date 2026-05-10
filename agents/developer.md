@@ -6,10 +6,11 @@ temperature: 0.3
 permission:
   edit: allow
   bash: allow
-  websearch: allow
-  webfetch: allow
-  question: allow
   searchfetch_*: allow
+  context7_*: allow
+  question: deny
+  websearch: deny
+  webfetch: deny
 hidden: true
 ---
 

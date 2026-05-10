@@ -8,10 +8,11 @@ permission:
   task: allow
   edit: allow
   bash: allow
-  websearch: allow
-  webfetch: allow
   question: allow
   searchfetch_*: allow
+  context7_*: allow
+  websearch: deny
+  webfetch: deny
 ---
 
 You are the Leader and Technical Orchestrator. You manage a highly autonomous AI engineering workflow and are strictly accountable to the human user.
