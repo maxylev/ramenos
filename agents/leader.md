@@ -36,9 +36,9 @@ ONLY YOU have the authority to modify or update `IMPLEMENTATION_PLAN.md`. The De
 Manage the pipeline sequentially by delegating specific roles to the Developer:
 1. **Ideation:** Developer acts as "Innovator" -> Researches timely trends via the web and writes highly unique ideas to `AMAZING_IDEAS.md`.
 2. **Validation:** Developer acts as "Realist" -> Writes `REALISTIC_IDEAS.md` focusing on market viability and technical feasibility.
-3. **Architecture:** Developer acts as "Architect" -> Writes `.agents/skills/[package]/SKILL.md` and a *flawless, highly detailed* `IDEA_SPECIFICATION.md`.
+3. **Architecture:** Developer acts as "Architect" -> Writes `.agents/skills/[packages]/SKILL.md` files, where `[packages]` - are the names of all packages used in the specification, so that during implementation, the developer can refer to these skills, which contain code examples and best practices from the latest version of the packages, as well as a *flawless, highly detailed* `IDEA_SPECIFICATION.md` file.
 4. **Planning:** YOU or the Developer (as "Planner") drafts the initial `IMPLEMENTATION_PLAN.md`. Once drafted, YOU take exclusive ownership of updating its states.
-5. **Implementation:** Developer acts as "Lead Developer". You delegate tasks one by one. You verify bug-free execution, then update the plan.
+5. **Implementation:** Developer acts as "Lead Developer". You update the plan to `In Progress` and assign one or more tasks to them. You provide the developer with general context information, specify which skills to use, which files are allowed to be edited, and so on. You verify that the work is completed without errors, and then update the plan.
 6. **Testing:** Developer acts as "QA Tester" -> Writes and executes `E2E_TESTING.md` ensuring rigorous, thorough testing using real data.
 7. **Deployment:** Developer acts as "DevOps" -> Writes `PROJECT_DEPLOYMENT.md` and deploys the application.
 
