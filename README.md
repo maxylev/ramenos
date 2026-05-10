@@ -11,6 +11,23 @@ Designed for modern AI coding assistants like [OpenCode](https://opencode.ai/). 
 
 ---
 
+## 📑 Table of Contents
+
+- [✨ Features](#-features)
+- [🚀 Quick Start](#-quick-start)
+- [📖 Usage Guide](#-usage-guide)
+  - [Options](#options)
+  - [Examples](#examples)
+- [🔗 Supported Repository Formats](#-supported-repository-formats)
+-[🎯 Dynamic Target Paths](#-dynamic-target-paths)
+- [🛠️ Creating Your Own Agent Repo](#️-creating-your-own-agent-repo)
+- [🧠 Advanced: OpenCode & 9router Setup](#-advanced-opencode--9router-setup)
+  - [1. Model Routing (9router)](#1-model-routing-with-9router)
+  - [2. OpenCode Configuration](#2-opencode-configuration)
+  -[3. Web Search & Context (MCP)](#3-web-search--context-mcp)
+
+---
+
 ## ✨ Features
 
 - 🚀 **Zero Dependencies**: Built with native Node.js. Incredibly fast execution.
@@ -18,9 +35,11 @@ Designed for modern AI coding assistants like [OpenCode](https://opencode.ai/). 
 - 🐙 **Flexible Git Support**: Supports GitHub shorthand, raw HTTPS, SSH, and deep folder trees.
 - 🎯 **Dynamic Frameworks**: By default targets `opencode`, but supports dynamic path generation for *any* agent framework you provide.
 
+---
+
 ## 🚀 Quick Start
 
-No global install required! Just run it via `npx` inside your project directory:
+No global installation is required! Run it directly via `npx` inside your project directory:
 
 ```bash
 # Add an AI agent team to your current project (defaults to OpenCode)
@@ -30,7 +49,11 @@ npx ramenos add maxylev/ramenos
 npx ramenos add maxylev/ramenos --global
 ```
 
-## 📖 Usage Options
+---
+
+## 📖 Usage Guide
+
+### Options
 
 ```text
 Usage: ramenos add <repository> [options]
@@ -43,15 +66,24 @@ Options:
   -h, --help                Display help message
 ```
 
-## 🎯 Dynamic Target Paths
+### Examples
 
-`ramenos` dynamically generates file paths based on the `--agent` parameter you pass. If omitted, it gracefully defaults to `opencode`.
+**Install to multiple AI assistant structures at once:**
+```bash
+npx ramenos add maxylev/ramenos -a opencode codex
+```
 
-| Command | Local Path Generated | Global Path Generated (`-g`) |
-| :--- | :--- | :--- |
-| `ramenos add repo` | `.opencode/agents/` | `~/.config/opencode/agents/` |
-| `ramenos add repo -a myapp` | `.myapp/agents/` | `~/.config/myapp/agents/` |
-| `ramenos add repo -a foo bar` | `.foo/agents/` & `.bar/agents/` | `~/.config/foo/agents/` & `~/.config/bar/agents/` |
+**Copy files instead of symlinking (so you can edit the prompts):**
+```bash
+npx ramenos add maxylev/ramenos --copy
+```
+
+**CI/CD or Automated Scripting (Skip all prompts):**
+```bash
+npx ramenos add maxylev/ramenos --yes
+```
+
+---
 
 ## 🔗 Supported Repository Formats
 
@@ -72,22 +104,19 @@ npx ramenos add https://github.com/ai-labs/my-agents/tree/main/agents/orchestrat
 npx ramenos add git@github.com:my-company/internal-agents.git
 ```
 
-## 💡 Examples
+---
 
-**Install to multiple AI assistant structures at once:**
-```bash
-npx ramenos add maxylev/ramenos -a opencode claude-code codex
-```
+## 🎯 Dynamic Target Paths
 
-**Copy files instead of symlinking (so you can edit the prompts):**
-```bash
-npx ramenos add maxylev/ramenos --copy
-```
+`ramenos` dynamically generates file paths based on the `--agent` parameter you pass. If omitted, it gracefully defaults to `opencode`.
 
-**CI/CD or Automated Scripting (Skip all prompts):**
-```bash
-npx ramenos add maxylev/ramenos --yes
-```
+| Command | Local Path Generated | Global Path Generated (`-g`) |
+| :--- | :--- | :--- |
+| `ramenos add repo` | `.opencode/agents/` | `~/.config/opencode/agents/` |
+| `ramenos add repo -a myapp` | `.myapp/agents/` | `~/.config/myapp/agents/` |
+| `ramenos add repo -a foo bar` | `.foo/agents/` & `.bar/agents/` | `~/.config/foo/agents/` & `~/.config/bar/agents/` |
+
+---
 
 ## 🛠️ Creating Your Own Agent Repo
 
@@ -97,37 +126,33 @@ Want to share your own agents via `ramenos`? Just create a public GitHub reposit
 my-awesome-agents/
 ├── README.md
 └── agents/
-    ├── orchestrator.md
-    ├── developer.md
-    └── tester.md
+    ├── leader.md
+    └── developer.md
 ```
 
-Then anyone can install your setup using: `npx ramenos add your-username/my-awesome-agents`
+Then anyone can install your setup using: 
+`npx ramenos add your-username/my-awesome-agents`
 
-## Use 9router
+---
 
-Run the following command to start the 9router:
+## 🧠 Advanced: OpenCode & 9router Setup
+
+For users setting up an advanced local agent workflow with fallback models and web search capabilities, follow these steps to integrate OpenCode, `9router`, and MCP servers.
+
+### 1. Model Routing with 9router
+
+Run the following command to install and start the `9router`:
 
 ```bash
 npm install -g 9router
 9router
 ```
 
-- Configure 9router:
+*Configure `9router` via the UI at `http://localhost:20128` to create model combos with fallback support (e.g., configuring `leader` and `developer` endpoints).*
 
-`http://localhost:20128`
+### 2. OpenCode Configuration
 
-Create model combos with fallback support:
-- chef
-- cook
-- coordinator
-- critic
-- innovator
-- logistician
-- master
-- taster
-
-- Configure opencode:
+Update your `opencode.json` file to point to your local 9router instance:
 
 ```json
 {
@@ -140,29 +165,11 @@ Create model combos with fallback support:
         "baseURL": "http://localhost:20128/v1"
       },
       "models": {
-        "chef": {
-          "name": "chef"
+        "leader": {
+          "name": "leader"
         },
-        "cook": {
-          "name": "cook"
-        },
-        "coordinator": {
-          "name": "coordinator"
-        },
-        "critic": {
-          "name": "critic"
-        },
-        "innovator": {
-          "name": "innovator"
-        },
-        "logistician": {
-          "name": "logistician"
-        },
-        "master": {
-          "name": "master"
-        },
-        "taster": {
-          "name": "taster"
+        "developer": {
+          "name": "developer"
         }
       }
     }
@@ -170,8 +177,34 @@ Create model combos with fallback support:
 }
 ```
 
-Run opencode with websearch:
+### 3. Web Search & Context (MCP)
 
+Equip your OpenCode agents with web search and up-to-date documentation scraping. Add the desired tools to your `opencode.json`.
+
+**Option A: Default Exa Search** (May occasionally be blocked by bot-protection)
 ```bash
 OPENCODE_ENABLE_EXA=1 opencode
 ```
+
+**Option B: MCP `searchfetch` & `context7`** (Recommended for human-like scraping and latest docs)
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "searchfetch": {
+      "type": "local",
+      "command": ["npx", "-y", "searchfetch"],
+      "enabled": true
+    },
+    "context7": {
+      "type": "remote",
+      "url": "https://mcp.context7.com/mcp",
+      "headers": {
+        "CONTEXT7_API_KEY": "your_api_key_here"
+      },
+      "enabled": true
+    }
+  }
+}
+```
+*Note: `context7` is highly recommended for querying the absolute latest version documentation directly into your agent's context.*
