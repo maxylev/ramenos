@@ -20,7 +20,7 @@ Designed for modern AI coding assistants like [OpenCode](https://opencode.ai/). 
   - [Examples](#examples)
 - [🔗 Supported Repository Formats](#-supported-repository-formats)
 - [🎯 Dynamic Target Paths](#-dynamic-target-paths)
-- [🛠️ Creating Your Own Agent Repo](#️-creating-your-own-agent-repo)
+- [🛠️ Creating Your Own Agent Repo](#-creating-your-own-agent-repo)
 - [🧠 Advanced: OpenCode & 9router Setup](#-advanced-opencode--9router-setup)
   - [1. Model Routing (9router)](#1-model-routing-with-9router)
   - [2. OpenCode Configuration](#2-opencode-configuration)
