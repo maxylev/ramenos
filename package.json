@@ -1,0 +1,29 @@
+{
+  "name": "ramenos",
+  "version": "1.0.0",
+  "description": "A fast CLI to share and install AI multi-agent orchestration files",
+  "main": "src/index.js",
+  "type": "module",
+  "bin": {
+    "ramenos": "bin/ramenos.js"
+  },
+  "scripts": {
+    "start": "node bin/ramenos.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/maxylev/ramenos.git"
+  },
+  "keywords": [
+    "ai",
+    "agents",
+    "opencode",
+    "cli"
+  ],
+  "author": "Max Ylev",
+  "license": "MIT"
+}
