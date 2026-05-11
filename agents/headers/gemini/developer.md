@@ -10,7 +10,6 @@ tools:
   - run_shell_command
   - web_fetch
   - google_web_search
-model: inherit
 temperature: 0.2
 max_turns: 30
 ---
