@@ -6,6 +6,8 @@ import readline from "readline";
 
 export const RAMENOS_CACHE_DIR = path.join(os.homedir(), ".ramenos", "cache");
 
+export const VALID_PRESETS = ["new", "continue"];
+
 export const colors = {
   reset: "\x1b[0m",
   red: "\x1b[31m",
@@ -16,21 +18,26 @@ export const colors = {
   gray: "\x1b[90m",
 };
 
-/**
- * Applies terminal colors to text
- */
+const FRAMEWORK_PATHS = {
+  opencode: { global: ".config/opencode", local: ".opencode" },
+  gemini: { global: ".gemini", local: ".gemini" },
+  claude: { global: ".claude", local: ".claude" },
+};
+
 export function colorize(color, text) {
   return `${colors[color]}${text}${colors.reset}`;
 }
 
-/**
- * Dynamically resolves global and local paths based on the agent/framework name
- * @param {string} framework - The framework name (e.g., 'opencode', 'claude')
- * @returns {{ global: string, local: string }}
- */
 export function getTargetPaths(framework) {
-  // Sanitize to prevent directory traversal (e.g., ../)
   const safeName = framework.toLowerCase().replace(/[^a-z0-9-]/g, "");
+  const config = FRAMEWORK_PATHS[safeName];
+
+  if (config) {
+    return {
+      global: path.join(os.homedir(), config.global, "agents"),
+      local: path.join(process.cwd(), config.local, "agents"),
+    };
+  }
 
   return {
     global: path.join(os.homedir(), ".config", safeName, "agents"),
@@ -38,13 +45,11 @@ export function getTargetPaths(framework) {
   };
 }
 
-/**
- * Parses CLI arguments manually to keep the CLI zero-dependency
- */
 export function parseArgs(args) {
   const options = {
     global: false,
     agent: [],
+    preset: "continue",
     copy: false,
     yes: false,
     command: null,
@@ -71,18 +76,18 @@ export function parseArgs(args) {
       while (i + 1 < args.length && !args[i + 1].startsWith("-")) {
         options.agent.push(args[++i]);
       }
+    } else if (arg === "-p" || arg === "--preset") {
+      if (i + 1 < args.length && !args[i + 1].startsWith("-")) {
+        options.preset = args[++i];
+      }
     }
   }
   return options;
 }
 
-/**
- * Extracts URL, branch, and subpaths from Git input, OR resolves local directories
- */
 export function parseInput(input) {
   if (!input) return null;
 
-  // 1. Resolve local path
   let resolvedPath = input;
   if (input.startsWith("~/")) {
     resolvedPath = path.join(os.homedir(), input.slice(2));
@@ -90,21 +95,19 @@ export function parseInput(input) {
     resolvedPath = path.resolve(input);
   }
 
-  // 2. Check if it's explicitly a local path OR if the directory actually exists
   const isExplicitLocal =
     input.startsWith("./") ||
     input.startsWith("../") ||
     input.startsWith("/") ||
     input.startsWith("~/") ||
-    input.startsWith(".\\") || // Windows relative
-    input.startsWith("..\\") || // Windows relative
-    /^[A-Za-z]:[\\/]/.test(input); // Windows absolute (e.g. C:\)
+    input.startsWith(".\\") ||
+    input.startsWith("..\\") ||
+    /^[A-Za-z]:[\\/]/.test(input);
 
   if (
     isExplicitLocal ||
     (fs.existsSync(resolvedPath) && fs.statSync(resolvedPath).isDirectory())
   ) {
-    // If the folder contains an "agents" subdirectory, use it automatically!
     const agentsSubdir = path.join(resolvedPath, "agents");
     if (
       fs.existsSync(agentsSubdir) &&
@@ -119,7 +122,6 @@ export function parseInput(input) {
     };
   }
 
-  // 3. Matches: https://github.com/user/repo/tree/branch/path
   const treeMatch = input.match(
     /github\.com\/([^/]+\/[^/]+)\/tree\/([^/]+)\/(.+)/,
   );
@@ -132,7 +134,6 @@ export function parseInput(input) {
     };
   }
 
-  // 4. Matches SSH or raw HTTPs
   if (input.startsWith("git@") || input.startsWith("http")) {
     const idMatch = input.match(/([^/:]+\/[^/.]+)(\.git)?$/);
     return {
@@ -145,7 +146,6 @@ export function parseInput(input) {
     };
   }
 
-  // 5. Matches shorthand: user/repo
   return {
     url: `https://github.com/${input}.git`,
     branch: null,
@@ -154,9 +154,6 @@ export function parseInput(input) {
   };
 }
 
-/**
- * Creates an interactive Yes/No prompt
- */
 export function askConfirm(question) {
   const rl = readline.createInterface({
     input: process.stdin,
@@ -171,11 +168,7 @@ export function askConfirm(question) {
   });
 }
 
-/**
- * Clones the repository into cache, OR returns the local directory path
- */
 export function fetchRepo(repoConfig) {
-  // If it's a local directory, bypass git and cache entirely
   if (repoConfig.isLocal) {
     if (!fs.existsSync(repoConfig.sourcePath)) {
       throw new Error(`Local path does not exist: ${repoConfig.sourcePath}`);
@@ -186,7 +179,6 @@ export function fetchRepo(repoConfig) {
     return repoConfig.sourcePath;
   }
 
-  // Otherwise, handle remote git repository
   if (!fs.existsSync(RAMENOS_CACHE_DIR)) {
     fs.mkdirSync(RAMENOS_CACHE_DIR, { recursive: true });
   }
@@ -230,21 +222,157 @@ export function fetchRepo(repoConfig) {
   return sourcePath;
 }
 
-/**
- * Installs (symlinks or copies) the agents to the specified target directories
- */
+export function isStructuredSource(sourcePath) {
+  const headersDir = path.join(sourcePath, "headers");
+  const promptsDir = path.join(sourcePath, "prompts");
+  return (
+    fs.existsSync(headersDir) &&
+    fs.statSync(headersDir).isDirectory() &&
+    fs.existsSync(promptsDir) &&
+    fs.statSync(promptsDir).isDirectory()
+  );
+}
+
+export function combineAgentFile(headerContent, promptContent) {
+  const header = headerContent.trimEnd();
+  const prompt = promptContent.trim();
+  if (!prompt) return header + "\n";
+  return header + "\n\n" + prompt + "\n";
+}
+
+function installStructured(sourcePath, destDir, framework, preset) {
+  const headersDir = path.join(sourcePath, "headers", framework);
+  const promptsDir = path.join(sourcePath, "prompts", preset);
+
+  if (!fs.existsSync(headersDir)) {
+    console.log(
+      colorize(
+        "yellow",
+        `  ⚠️  No headers found for '${framework}'. Skipping.`,
+      ),
+    );
+    return 0;
+  }
+
+  if (!fs.existsSync(promptsDir)) {
+    console.log(
+      colorize(
+        "yellow",
+        `  ⚠️  No prompts found for preset '${preset}'. Skipping.`,
+      ),
+    );
+    return 0;
+  }
+
+  const headerFiles = fs
+    .readdirSync(headersDir)
+    .filter((f) => f.endsWith(".md") && !f.startsWith("."));
+
+  let installedCount = 0;
+
+  for (const file of headerFiles) {
+    const headerContent = fs.readFileSync(
+      path.join(headersDir, file),
+      "utf-8",
+    );
+    const promptFile = path.join(promptsDir, file);
+
+    let promptContent = "";
+    if (fs.existsSync(promptFile)) {
+      promptContent = fs.readFileSync(promptFile, "utf-8");
+    }
+
+    const finalContent = combineAgentFile(headerContent, promptContent);
+    const destFile = path.join(destDir, file);
+
+    if (
+      fs.existsSync(destFile) ||
+      fs.lstatSync(destFile, { throwIfNoEntry: false })
+    ) {
+      fs.unlinkSync(destFile);
+    }
+
+    fs.writeFileSync(destFile, finalContent);
+    console.log(colorize("green", `  ✓ Installed: ${file}`));
+    installedCount++;
+  }
+
+  return installedCount;
+}
+
+function installLegacy(sourcePath, destDir, options) {
+  const files = fs.readdirSync(sourcePath);
+  let installedCount = 0;
+
+  for (const file of files) {
+    if (file.startsWith(".")) continue;
+    if (file === "headers" || file === "prompts") continue;
+
+    const srcFile = path.join(sourcePath, file);
+    if (fs.statSync(srcFile).isDirectory()) continue;
+
+    const destFile = path.join(destDir, file);
+
+    if (
+      fs.existsSync(destFile) ||
+      fs.lstatSync(destFile, { throwIfNoEntry: false })
+    ) {
+      fs.unlinkSync(destFile);
+    }
+
+    try {
+      if (options.copy) {
+        fs.cpSync(srcFile, destFile, { recursive: true });
+        console.log(colorize("green", `  ✓ Copied: ${file}`));
+      } else {
+        fs.symlinkSync(srcFile, destFile);
+        console.log(colorize("green", `  ✓ Symlinked: ${file}`));
+      }
+      installedCount++;
+    } catch (err) {
+      if (err.code === "EPERM" && !options.copy) {
+        fs.cpSync(srcFile, destFile, { recursive: true });
+        console.log(
+          colorize("green", `  ✓ Copied (Symlink fallback): ${file}`),
+        );
+        installedCount++;
+      } else {
+        console.error(
+          colorize("red", `  ❌ Failed to install ${file}: ${err.message}`),
+        );
+      }
+    }
+  }
+
+  return installedCount;
+}
+
 export async function installAgents(sourcePath, options) {
-  // Default strictly to "opencode" if no explicit agents provided
   const targetFrameworks =
     options.agent.length > 0 ? options.agent : ["opencode"];
   const scopeName = options.global ? "Global" : "Project Local";
+  const structured = isStructuredSource(sourcePath);
+
+  if (!VALID_PRESETS.includes(options.preset)) {
+    throw new Error(
+      `Invalid preset '${options.preset}'. Valid presets: ${VALID_PRESETS.join(", ")}`,
+    );
+  }
+
+  if (structured) {
+    console.log(
+      colorize("cyan", `📋 Preset: ${options.preset}`),
+    );
+  }
 
   for (const framework of targetFrameworks) {
     const paths = getTargetPaths(framework);
-    const destDir = options.global ? paths.global : paths.local;
+    const destDir =
+      options.destOverride ||
+      (options.global ? paths.global : paths.local);
 
     console.log(
-      colorize("blue", `\n🚀 Target Framework: [${framework}] -> ${destDir}`),
+      colorize("blue", `\n🚀 Target: [${framework}] -> ${destDir}`),
     );
 
     if (!options.yes) {
@@ -261,52 +389,22 @@ export async function installAgents(sourcePath, options) {
       fs.mkdirSync(destDir, { recursive: true });
     }
 
-    const files = fs.readdirSync(sourcePath);
-    let installedCount = 0;
+    let installedCount;
 
-    for (const file of files) {
-      // Ignore hidden files like .git
-      if (file.startsWith(".")) continue;
-
-      const srcFile = path.join(sourcePath, file);
-      const destFile = path.join(destDir, file);
-
-      // Clean existing target files/symlinks
-      if (
-        fs.existsSync(destFile) ||
-        fs.lstatSync(destFile, { throwIfNoEntry: false })
-      ) {
-        fs.unlinkSync(destFile);
-      }
-
-      try {
-        if (options.copy) {
-          fs.cpSync(srcFile, destFile, { recursive: true });
-          console.log(colorize("green", `  ✓ Copied: ${file}`));
-        } else {
-          fs.symlinkSync(srcFile, destFile);
-          console.log(colorize("green", `  ✓ Symlinked: ${file}`));
-        }
-        installedCount++;
-      } catch (err) {
-        // Handle Windows permission issues with symlinks gracefully
-        if (err.code === "EPERM" && !options.copy) {
-          fs.cpSync(srcFile, destFile, { recursive: true });
-          console.log(
-            colorize("green", `  ✓ Copied (Symlink fallback): ${file}`),
-          );
-          installedCount++;
-        } else {
-          console.error(
-            colorize("red", `  ❌ Failed to install ${file}: ${err.message}`),
-          );
-        }
-      }
+    if (structured) {
+      installedCount = installStructured(
+        sourcePath,
+        destDir,
+        framework,
+        options.preset,
+      );
+    } else {
+      installedCount = installLegacy(sourcePath, destDir, options);
     }
 
     if (installedCount === 0) {
       console.log(
-        colorize("yellow", `  ⚠️ No valid files found in source directory.`),
+        colorize("yellow", `  ⚠️  No agent files generated for '${framework}'.`),
       );
     }
   }

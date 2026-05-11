@@ -7,7 +7,7 @@
 
 A lightning-fast, **zero-dependency** CLI to share and install AI multi-agent orchestration configurations directly from GitHub into your local workspace.
 
-Designed for modern AI coding assistants like [OpenCode](https://opencode.ai/). Bootstrapping an elite multi-agent AI team is now just one command away.
+Designed for modern AI coding assistants like [OpenCode](https://opencode.ai/), [Gemini CLI](https://github.com/google-gemini/gemini-cli), and [Claude Code](https://code.claude.com/). Bootstrapping an elite multi-agent AI team is now just one command away.
 
 ---
 
@@ -18,22 +18,23 @@ Designed for modern AI coding assistants like [OpenCode](https://opencode.ai/). 
 - [📖 Usage Guide](#-usage-guide)
   - [Options](#options)
   - [Examples](#examples)
+- [🎯 Target Frameworks](#-target-frameworks)
+- [📋 Presets](#-presets)
 - [🔗 Supported Repository Formats](#-supported-repository-formats)
-- [🎯 Dynamic Target Paths](#-dynamic-target-paths)
 - [🛠️ Creating Your Own Agent Repo](#-creating-your-own-agent-repo)
+- [🏗️ How It Works](#-how-it-works)
 - [🧠 Advanced: OpenCode & 9router Setup](#-advanced-opencode--9router-setup)
-  - [1. Model Routing (9router)](#1-model-routing-with-9router)
-  - [2. OpenCode Configuration](#2-opencode-configuration)
-  - [3. Web Search & Context (MCP)](#3-web-search--context-mcp)
 
 ---
 
 ## ✨ Features
 
 - 🚀 **Zero Dependencies**: Built with native Node.js. Incredibly fast execution.
-- 🔗 **Smart Caching**: Uses local caching to safely symlink agent files without cluttering your project.
+- 🔗 **Smart Caching**: Uses local caching to safely manage agent files without cluttering your project.
 - 🐙 **Flexible Git Support**: Supports GitHub shorthand, raw HTTPS, SSH, and deep folder trees.
-- 🎯 **Dynamic Frameworks**: By default targets `opencode`, but supports dynamic path generation for *any* agent framework you provide.
+- 🎯 **Multi-Framework**: Install to `.opencode/agents/`, `.gemini/agents/`, `.claude/agents/`, or any custom structure — all from a single command.
+- 📋 **Presets**: Choose between `new` (full startup pipeline) and `continue` (task delegation for existing projects).
+- 🧩 **Header + Prompt Architecture**: Framework-specific headers are combined with shared prompts at install time — no duplication.
 
 ---
 
@@ -42,10 +43,16 @@ Designed for modern AI coding assistants like [OpenCode](https://opencode.ai/). 
 No global installation is required! Run it directly via `npx` inside your project directory:
 
 ```bash
-# Add an AI agent team to your current project (defaults to OpenCode)
+# Add agents for an existing project (defaults: opencode + continue preset)
 npx ramenos add maxylev/ramenos
 
-# Add agents globally to your machine
+# Add agents for all supported frameworks
+npx ramenos add maxylev/ramenos -a opencode gemini claude
+
+# Add agents for a new startup project
+npx ramenos add maxylev/ramenos -p new
+
+# Add agents globally
 npx ramenos add maxylev/ramenos --global
 ```
 
@@ -60,28 +67,62 @@ Usage: ramenos add <repository> [options]
 
 Options:
   -g, --global              Install to user directory instead of project workspace
-  -a, --agent <agents...>   Target specific agent frameworks (defaults to 'opencode')
-  --copy                    Copy files instead of symlinking (useful to modify them locally)
+  -a, --agent <agents...>   Target frameworks. Defaults to 'opencode'.
+                            Supported: opencode, gemini, claude, or any custom name.
+  -p, --preset <preset>     Prompt preset: 'new' or 'continue'. Defaults to 'continue'.
+                            new      — Full startup pipeline (ideation → deployment)
+                            continue — Task delegation for existing projects
+  --copy                    Copy files instead of symlinking (legacy mode only)
   -y, --yes                 Skip all confirmation prompts
   -h, --help                Display help message
 ```
 
 ### Examples
 
-**Install to multiple AI assistant structures at once:**
+**Install for all three frameworks at once:**
 ```bash
-npx ramenos add maxylev/ramenos -a opencode codex
+npx ramenos add maxylev/ramenos -a opencode gemini claude
 ```
 
-**Copy files instead of symlinking (so you can edit the prompts):**
+**Start a new startup project from scratch:**
 ```bash
-npx ramenos add maxylev/ramenos --copy
+npx ramenos add maxylev/ramenos -p new
 ```
 
-**CI/CD or Automated Scripting (Skip all prompts):**
+**Install for Gemini CLI with the continue preset:**
 ```bash
-npx ramenos add maxylev/ramenos --yes
+npx ramenos add maxylev/ramenos -a gemini -p continue
 ```
+
+**CI/CD or Automated Scripting:**
+```bash
+npx ramenos add maxylev/ramenos --yes -a opencode gemini claude
+```
+
+---
+
+## 🎯 Target Frameworks
+
+Ramenos knows the correct directory structure for popular AI tools:
+
+| Framework | Local Path | Global Path (`-g`) |
+| :--- | :--- | :--- |
+| `opencode` | `.opencode/agents/` | `~/.config/opencode/agents/` |
+| `gemini` | `.gemini/agents/` | `~/.gemini/agents/` |
+| `claude` | `.claude/agents/` | `~/.claude/agents/` |
+| *any custom* | `.<name>/agents/` | `~/.config/<name>/agents/` |
+
+---
+
+## 📋 Presets
+
+Presets control the system prompt that gets combined with the framework-specific header at install time.
+
+### `continue` (default)
+For **existing projects** that need a leader/developer hierarchy. The developer reports to the leader until the user's assigned task is complete. No planning files, no phases — just task delegation and verification.
+
+### `new`
+For **starting from scratch** — a full startup pipeline with phases: Ideation → Validation → Architecture → Planning → Implementation → Testing → Deployment. Uses `IMPLEMENTATION_PLAN.md` for state tracking.
 
 ---
 
@@ -94,44 +135,123 @@ Ramenos looks for an `agents/` folder by default in the root of the repository, 
 npx ramenos add my-labs/my-awesome-agents
 ```
 
-**2. Direct Sub-folder Links** (Grab specific agents from a larger monorepo):
+**2. Direct Sub-folder Links**:
 ```bash
 npx ramenos add https://github.com/ai-labs/my-agents/tree/main/agents/orchestration
 ```
 
-**3. SSH Formats** (For private repositories, assuming SSH keys are configured):
+**3. SSH Formats**:
 ```bash
 npx ramenos add git@github.com:my-company/internal-agents.git
 ```
 
 ---
 
-## 🎯 Dynamic Target Paths
-
-`ramenos` dynamically generates file paths based on the `--agent` parameter you pass. If omitted, it gracefully defaults to `opencode`.
-
-| Command | Local Path Generated | Global Path Generated (`-g`) |
-| :--- | :--- | :--- |
-| `ramenos add repo` | `.opencode/agents/` | `~/.config/opencode/agents/` |
-| `ramenos add repo -a myapp` | `.myapp/agents/` | `~/.config/myapp/agents/` |
-| `ramenos add repo -a foo bar` | `.foo/agents/` & `.bar/agents/` | `~/.config/foo/agents/` & `~/.config/bar/agents/` |
-
----
-
 ## 🛠️ Creating Your Own Agent Repo
 
-Want to share your own agents via `ramenos`? Just create a public GitHub repository and place your markdown (`.md`) or JSON config files inside an `agents/` directory at the root.
+Want to share your own agents via `ramenos`? Use the structured format with separate headers and prompts:
 
 ```text
 my-awesome-agents/
 ├── README.md
 └── agents/
-    ├── leader.md
+    ├── headers/
+    │   ├── opencode/
+    │   │   ├── leader.md      # Frontmatter for opencode
+    │   │   └── developer.md
+    │   ├── gemini/
+    │   │   ├── leader.md      # Frontmatter for gemini
+    │   │   └── developer.md
+    │   └── claude/
+    │       ├── leader.md      # Frontmatter for claude
+    │       └── developer.md
+    └── prompts/
+        ├── new/
+        │   ├── leader.md      # Prompt body for "new" preset
+        │   └── developer.md
+        └── continue/
+            ├── leader.md      # Prompt body for "continue" preset
+            └── developer.md
+```
+
+Then anyone can install your setup using:
+`npx ramenos add your-username/my-awesome-agents`
+
+### Header Files
+
+Header files contain **only the YAML frontmatter** (including `---` delimiters). Each framework has its own format:
+
+**opencode** (`headers/opencode/leader.md`):
+```yaml
+---
+description: My leader agent description
+mode: primary
+model: router/leader
+temperature: 0.1
+---
+```
+
+**gemini** (`headers/gemini/leader.md`):
+```yaml
+---
+name: leader
+description: My leader agent description
+tools:
+  - read_file
+  - write_file
+  - grep_search
+model: inherit
+---
+```
+
+**claude** (`headers/claude/leader.md`):
+```yaml
+---
+name: leader
+description: My leader agent description
+tools: Agent(developer), Read, Glob, Grep, Bash
+model: inherit
+permissionMode: auto
+---
+```
+
+### Prompt Files
+
+Prompt files contain **only the markdown body** (no frontmatter). They are shared across all frameworks:
+
+```markdown
+You are the Leader agent. Your job is to orchestrate the development workflow...
+
+**RULES:**
+- Rule 1
+- Rule 2
+```
+
+### Legacy Format
+
+For backward compatibility, you can also use the flat format (pre-composed `.md` files with both header and body):
+
+```text
+my-awesome-agents/
+├── README.md
+└── agents/
+    ├── leader.md      # Full file: frontmatter + body
     └── developer.md
 ```
 
-Then anyone can install your setup using: 
-`npx ramenos add your-username/my-awesome-agents`
+With the flat format, the `--copy` and symlink behavior applies. The structured format always writes combined files.
+
+---
+
+## 🏗️ How It Works
+
+1. **Fetch**: The repository is cloned (or updated) into `~/.ramenos/cache/`.
+2. **Detect**: If the source has `headers/` and `prompts/` subdirectories, structured mode is used.
+3. **Combine**: For each target framework, matching header and prompt files are combined:
+   - Header from `agents/headers/{framework}/{file}.md`
+   - Prompt from `agents/prompts/{preset}/{file}.md`
+   - Combined into a single `.md` file written to the target directory.
+4. **Install**: The final agent files are written to `.{framework}/agents/` in your project.
 
 ---
 
@@ -179,9 +299,9 @@ Update your `opencode.json` file to point to your local 9router instance:
 
 ### 3. Web Search & Context (MCP)
 
-Equip your OpenCode agents with web search and up-to-date documentation scraping. Add the desired tools to your `opencode.json`.
+Equip your agents with web search and up-to-date documentation scraping. Add the desired tools to your `opencode.json`.
 
-**MCP `searchfetch` & `context7`** (Recommended for human-like scraping and latest docs)
+**MCP `searchfetch` & `context7`**:
 ```json
 {
   "$schema": "https://opencode.ai/config.json",
@@ -202,4 +322,3 @@ Equip your OpenCode agents with web search and up-to-date documentation scraping
   }
 }
 ```
-*Note: `context7` is highly recommended for querying the absolute latest version documentation directly into your agent's context.*

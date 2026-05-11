@@ -5,6 +5,7 @@ import {
   parseInput,
   fetchRepo,
   installAgents,
+  VALID_PRESETS,
   colorize,
 } from "../src/index.js";
 
@@ -17,18 +18,23 @@ ${colorize("yellow", "Usage:")}
   ramenos add <repository> [options]
 
 ${colorize("yellow", "Options:")}
-  -g, --global              Install globally to user directory (~/.config/) instead of local project
+  -g, --global              Install globally to user directory instead of local project
   -a, --agent <agents...>   Target frameworks. Defaults to 'opencode' if omitted.
-                            (e.g., '-a xxx yyy' creates .xxx/agents and .yyy/agents)
+                            Supported: opencode, gemini, claude, or any custom name.
+  -p, --preset <preset>     Prompt preset: 'new' or 'continue'. Defaults to 'continue'.
+                            new      — Full startup pipeline (ideation → deployment)
+                            continue — Task delegation for existing projects
   --copy                    Copy files completely instead of creating symlinks
   -y, --yes                 Skip all confirmation prompts
   -h, --help                Display this help message
 
 ${colorize("yellow", "Examples:")}
   ramenos add ai-labs/my-agents
+  ramenos add maxylev/ramenos --agent opencode gemini claude
+  ramenos add maxylev/ramenos -p new
   ramenos add ./my-labs/my-awesome-agents
-  ramenos add ai-labs/my-agents -g -a opencode codex claude-code
-  ramenos add https://github.com/ai-labs/my-agents/tree/main/agents/my --copy
+  ramenos add ai-labs/my-agents -g --copy -p new
+  ramenos add https://github.com/ai-labs/my-agents/tree/main/agents/my
 `);
 }
 
@@ -47,6 +53,16 @@ async function run() {
         colorize("red", "\n❌ Error: Repository argument is required."),
       );
       console.log(colorize("gray", "   Try: ramenos add user/repo\n"));
+      process.exit(1);
+    }
+
+    if (!VALID_PRESETS.includes(options.preset)) {
+      console.error(
+        colorize(
+          "red",
+          `\n❌ Error: Invalid preset '${options.preset}'. Valid: ${VALID_PRESETS.join(", ")}`,
+        ),
+      );
       process.exit(1);
     }
 
