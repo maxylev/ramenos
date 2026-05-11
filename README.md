@@ -16,6 +16,7 @@ Designed for modern AI coding assistants like [OpenCode](https://opencode.ai/), 
 - [✨ Features](#-features)
 - [🚀 Quick Start](#-quick-start)
 - [📖 Usage Guide](#-usage-guide)
+  - [Commands](#commands)
   - [Options](#options)
   - [Examples](#examples)
 - [🎯 Target Frameworks](#-target-frameworks)
@@ -35,6 +36,7 @@ Designed for modern AI coding assistants like [OpenCode](https://opencode.ai/), 
 - 🎯 **Multi-Framework**: Install to `.opencode/agents/`, `.gemini/agents/`, `.claude/agents/`, or any custom structure — all from a single command.
 - 📋 **Presets**: Choose between `new` (full startup pipeline) and `continue` (task delegation for existing projects).
 - 🧩 **Header + Prompt Architecture**: Framework-specific headers are combined with shared prompts at install time — no duplication.
+- 🗑️ **Clean Uninstall**: Remove agents with `ramenos del` using the same options.
 
 ---
 
@@ -56,17 +58,37 @@ npx ramenos add maxylev/ramenos -p new
 npx ramenos add maxylev/ramenos --global
 ```
 
+To remove agents later:
+
+```bash
+# Remove the same agents you installed
+npx ramenos del maxylev/ramenos
+
+# Remove from all frameworks
+npx ramenos del maxylev/ramenos -a opencode gemini claude
+
+# Remove from global directory
+npx ramenos del maxylev/ramenos -g
+```
+
 ---
 
 ## 📖 Usage Guide
 
+### Commands
+
+| Command | Description |
+| :--- | :--- |
+| `add <repository>` | Install agent files into your project |
+| `del <repository>` | Remove previously installed agent files |
+
 ### Options
 
 ```text
-Usage: ramenos add <repository> [options]
+Usage: ramenos <add|del> <repository> [options]
 
 Options:
-  -g, --global              Install to user directory instead of project workspace
+  -g, --global              Target global (~/.config/) instead of local project
   -a, --agent <agents...>   Target frameworks. Defaults to 'opencode'.
                             Supported: opencode, gemini, claude, or any custom name.
   -p, --preset <preset>     Prompt preset: 'new' or 'continue'. Defaults to 'continue'.
@@ -92,6 +114,16 @@ npx ramenos add maxylev/ramenos -p new
 **Install for Gemini CLI with the continue preset:**
 ```bash
 npx ramenos add maxylev/ramenos -a gemini -p continue
+```
+
+**Remove agents from a specific framework:**
+```bash
+npx ramenos del maxylev/ramenos -a gemini
+```
+
+**Remove all agents and clean up:**
+```bash
+npx ramenos del maxylev/ramenos -a opencode gemini claude
 ```
 
 **CI/CD or Automated Scripting:**
@@ -245,6 +277,7 @@ With the flat format, the `--copy` and symlink behavior applies. The structured 
 
 ## 🏗️ How It Works
 
+### `add`
 1. **Fetch**: The repository is cloned (or updated) into `~/.ramenos/cache/`.
 2. **Detect**: If the source has `headers/` and `prompts/` subdirectories, structured mode is used.
 3. **Combine**: For each target framework, matching header and prompt files are combined:
@@ -252,6 +285,11 @@ With the flat format, the `--copy` and symlink behavior applies. The structured 
    - Prompt from `agents/prompts/{preset}/{file}.md`
    - Combined into a single `.md` file written to the target directory.
 4. **Install**: The final agent files are written to `.{framework}/agents/` in your project.
+
+### `del`
+1. **Fetch**: The repository is fetched (same as `add`) to determine which files were installed.
+2. **Remove**: For each target framework, the matching agent files are deleted from `.{framework}/agents/`.
+3. **Cleanup**: If the agents directory is empty after removal, it is deleted automatically.
 
 ---
 

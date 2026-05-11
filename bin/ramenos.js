@@ -5,6 +5,7 @@ import {
   parseInput,
   fetchRepo,
   installAgents,
+  removeAgents,
   VALID_PRESETS,
   colorize,
 } from "../src/index.js";
@@ -16,9 +17,14 @@ A fast, zero-dependency CLI to share and install AI multi-agent orchestration fi
 
 ${colorize("yellow", "Usage:")}
   ramenos add <repository> [options]
+  ramenos del <repository> [options]
+
+${colorize("yellow", "Commands:")}
+  add                       Install agent files into your project
+  del                       Remove previously installed agent files
 
 ${colorize("yellow", "Options:")}
-  -g, --global              Install globally to user directory instead of local project
+  -g, --global              Target global (~/.config/) instead of local project
   -a, --agent <agents...>   Target frameworks. Defaults to 'opencode' if omitted.
                             Supported: opencode, gemini, claude, or any custom name.
   -p, --preset <preset>     Prompt preset: 'new' or 'continue'. Defaults to 'continue'.
@@ -32,9 +38,9 @@ ${colorize("yellow", "Examples:")}
   ramenos add ai-labs/my-agents
   ramenos add maxylev/ramenos --agent opencode gemini claude
   ramenos add maxylev/ramenos -p new
-  ramenos add ./my-labs/my-awesome-agents
-  ramenos add ai-labs/my-agents -g --copy -p new
-  ramenos add https://github.com/ai-labs/my-agents/tree/main/agents/my
+  ramenos del maxylev/ramenos
+  ramenos del maxylev/ramenos -a opencode gemini claude
+  ramenos del maxylev/ramenos -g
 `);
 }
 
@@ -75,6 +81,29 @@ async function run() {
 
       console.log(
         colorize("green", "\n✨ Done! Agent files successfully installed.\n"),
+      );
+    } catch (err) {
+      console.error(colorize("red", `\n❌ Fatal Error: ${err.message}\n`));
+      process.exit(1);
+    }
+  } else if (options.command === "del") {
+    if (!options.repository) {
+      console.error(
+        colorize("red", "\n❌ Error: Repository argument is required."),
+      );
+      console.log(colorize("gray", "   Try: ramenos del user/repo\n"));
+      process.exit(1);
+    }
+
+    try {
+      const repoConfig = parseInput(options.repository);
+      if (!repoConfig) throw new Error("Invalid repository format provided.");
+
+      const sourcePath = fetchRepo(repoConfig);
+      await removeAgents(sourcePath, options);
+
+      console.log(
+        colorize("green", "\n✨ Done! Agent files successfully removed.\n"),
       );
     } catch (err) {
       console.error(colorize("red", `\n❌ Fatal Error: ${err.message}\n`));

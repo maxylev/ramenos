@@ -11,6 +11,7 @@ import {
   parseArgs,
   getTargetPaths,
   installAgents,
+  removeAgents,
   isStructuredSource,
   combineAgentFile,
   VALID_PRESETS,
@@ -110,6 +111,19 @@ test("parseArgs: Basic add command with defaults", () => {
   assert.strictEqual(opts.global, false);
   assert.strictEqual(opts.preset, "continue");
   assert.deepStrictEqual(opts.agent, []);
+});
+
+test("parseArgs: del command", () => {
+  const opts = parseArgs(["del", "maxylev/ramenos"]);
+  assert.strictEqual(opts.command, "del");
+  assert.strictEqual(opts.repository, "maxylev/ramenos");
+});
+
+test("parseArgs: del with flags", () => {
+  const opts = parseArgs(["del", "maxylev/ramenos", "-g", "-a", "gemini", "claude"]);
+  assert.strictEqual(opts.command, "del");
+  assert.strictEqual(opts.global, true);
+  assert.deepStrictEqual(opts.agent, ["gemini", "claude"]);
 });
 
 test("parseArgs: Multiple flags and agents", () => {
@@ -251,5 +265,70 @@ test("installAgents: rejects invalid preset", async () => {
     { message: /Invalid preset 'invalid'/ },
   );
 
+  fs.rmSync(tmpDir, { recursive: true });
+});
+
+test("removeAgents: structured mode removes installed files", async () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "ramenos-test-"));
+
+  const sourcePath = path.join(tmpDir, "source", "agents");
+  const headersDir = path.join(sourcePath, "headers", "opencode");
+  const promptsDir = path.join(sourcePath, "prompts", "continue");
+  fs.mkdirSync(headersDir, { recursive: true });
+  fs.mkdirSync(promptsDir, { recursive: true });
+
+  fs.writeFileSync(path.join(headersDir, "leader.md"), "---\n---");
+  fs.writeFileSync(path.join(headersDir, "developer.md"), "---\n---");
+  fs.writeFileSync(path.join(promptsDir, "leader.md"), "prompt");
+  fs.writeFileSync(path.join(promptsDir, "developer.md"), "prompt");
+
+  const destDir = path.join(tmpDir, "dest", ".opencode", "agents");
+
+  await installAgents(sourcePath, {
+    agent: ["opencode"],
+    preset: "continue",
+    global: false,
+    yes: true,
+    copy: false,
+    destOverride: destDir,
+  });
+
+  assert.ok(fs.existsSync(path.join(destDir, "leader.md")));
+  assert.ok(fs.existsSync(path.join(destDir, "developer.md")));
+
+  await removeAgents(sourcePath, {
+    agent: ["opencode"],
+    preset: "continue",
+    global: false,
+    yes: true,
+    destOverride: destDir,
+  });
+
+  assert.ok(!fs.existsSync(path.join(destDir, "leader.md")));
+  assert.ok(!fs.existsSync(path.join(destDir, "developer.md")));
+  assert.ok(!fs.existsSync(destDir));
+
+  fs.rmSync(tmpDir, { recursive: true });
+});
+
+test("removeAgents: skips missing directory", async () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "ramenos-test-"));
+
+  const sourcePath = path.join(tmpDir, "source", "agents");
+  const headersDir = path.join(sourcePath, "headers", "opencode");
+  fs.mkdirSync(headersDir, { recursive: true });
+  fs.writeFileSync(path.join(headersDir, "leader.md"), "---\n---");
+
+  const destDir = path.join(tmpDir, "nonexistent");
+
+  await removeAgents(sourcePath, {
+    agent: ["opencode"],
+    preset: "continue",
+    global: false,
+    yes: true,
+    destOverride: destDir,
+  });
+
+  assert.ok(!fs.existsSync(destDir));
   fs.rmSync(tmpDir, { recursive: true });
 });

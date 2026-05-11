@@ -61,8 +61,8 @@ export function parseArgs(args) {
     const arg = args[i];
     if (arg === "-h" || arg === "--help") {
       options.help = true;
-    } else if (arg === "add" && !options.command) {
-      options.command = "add";
+    } else if ((arg === "add" || arg === "del") && !options.command) {
+      options.command = arg;
       if (i + 1 < args.length && !args[i + 1].startsWith("-")) {
         options.repository = args[++i];
       }
@@ -405,6 +405,97 @@ export async function installAgents(sourcePath, options) {
     if (installedCount === 0) {
       console.log(
         colorize("yellow", `  ⚠️  No agent files generated for '${framework}'.`),
+      );
+    }
+  }
+}
+
+function getAgentFileNames(sourcePath, framework, preset) {
+  if (isStructuredSource(sourcePath)) {
+    const headersDir = path.join(sourcePath, "headers", framework);
+    if (!fs.existsSync(headersDir)) return [];
+    return fs
+      .readdirSync(headersDir)
+      .filter((f) => f.endsWith(".md") && !f.startsWith("."));
+  }
+
+  return fs
+    .readdirSync(sourcePath)
+    .filter(
+      (f) => !f.startsWith(".") && f !== "headers" && f !== "prompts",
+    )
+    .filter((f) => {
+      const p = path.join(sourcePath, f);
+      return fs.existsSync(p) && !fs.statSync(p).isDirectory();
+    });
+}
+
+export async function removeAgents(sourcePath, options) {
+  const targetFrameworks =
+    options.agent.length > 0 ? options.agent : ["opencode"];
+  const scopeName = options.global ? "Global" : "Project Local";
+
+  for (const framework of targetFrameworks) {
+    const paths = getTargetPaths(framework);
+    const destDir =
+      options.destOverride ||
+      (options.global ? paths.global : paths.local);
+
+    console.log(
+      colorize("blue", `\n🗑️  Target: [${framework}] -> ${destDir}`),
+    );
+
+    if (!fs.existsSync(destDir)) {
+      console.log(
+        colorize("gray", `  Directory does not exist. Skipping.`),
+      );
+      continue;
+    }
+
+    const fileNames = getAgentFileNames(sourcePath, framework, options.preset);
+
+    if (fileNames.length === 0) {
+      console.log(
+        colorize("gray", `  No agent files found in source. Skipping.`),
+      );
+      continue;
+    }
+
+    if (!options.yes) {
+      const isConfirmed = await askConfirm(
+        `Remove agents from ${scopeName} ${framework} directory?`,
+      );
+      if (!isConfirmed) {
+        console.log(colorize("gray", "  Skipped."));
+        continue;
+      }
+    }
+
+    let removedCount = 0;
+
+    for (const file of fileNames) {
+      const destFile = path.join(destDir, file);
+      const stat = fs.lstatSync(destFile, { throwIfNoEntry: false });
+
+      if (!stat && !fs.existsSync(destFile)) {
+        console.log(colorize("gray", `  Not found: ${file}`));
+        continue;
+      }
+
+      fs.unlinkSync(destFile);
+      console.log(colorize("green", `  ✓ Removed: ${file}`));
+      removedCount++;
+    }
+
+    const remaining = fs.readdirSync(destDir).filter((f) => !f.startsWith("."));
+    if (remaining.length === 0) {
+      fs.rmSync(destDir, { recursive: true });
+      console.log(colorize("gray", `  Removed empty directory.`));
+    }
+
+    if (removedCount === 0) {
+      console.log(
+        colorize("yellow", `  ⚠️  No agent files removed for '${framework}'.`),
       );
     }
   }
