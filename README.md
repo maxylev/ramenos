@@ -232,7 +232,6 @@ tools:
   - read_file
   - write_file
   - grep_search
-model: inherit
 ---
 ```
 
@@ -259,20 +258,6 @@ You are the Leader agent. Your job is to orchestrate the development workflow...
 - Rule 2
 ```
 
-### Legacy Format
-
-For backward compatibility, you can also use the flat format (pre-composed `.md` files with both header and body):
-
-```text
-my-awesome-agents/
-├── README.md
-└── agents/
-    ├── leader.md      # Full file: frontmatter + body
-    └── developer.md
-```
-
-With the flat format, the `--copy` and symlink behavior applies. The structured format always writes combined files.
-
 ---
 
 ## 🏗️ How It Works
@@ -293,7 +278,7 @@ With the flat format, the `--copy` and symlink behavior applies. The structured 
 
 ---
 
-## 🧠 Advanced: OpenCode & 9router Setup
+## 🧠 Advanced: OpenCode & 9router Setup (for custom model)
 
 For users setting up an advanced local agent workflow with fallback models and web search capabilities, follow these steps to integrate OpenCode, `9router`, and MCP servers.
 
