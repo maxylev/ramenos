@@ -1,6 +1,6 @@
 {
   "name": "ramenos",
-  "version": "2.1.2",
+  "version": "2.1.3",
   "description": "A fast CLI to share and install AI multi-agent orchestration files",
   "main": "src/index.js",
   "type": "module",

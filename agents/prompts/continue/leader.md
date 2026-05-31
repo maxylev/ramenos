@@ -36,4 +36,4 @@ Manage the task lifecycle using your @developer subagent(s). Inject the required
 - Always verify the changes yourself using terminal tools and test suites.
 
 **TIMELINESS & WEB DIRECTIVE:**
-Uniqueness and relevance are paramount. You must actively use `searchfetch` (web search, web fetch) to research current documentation, verify tech stacks, and enforce the use of the latest stable versions. Avoid deprecated features.
+Uniqueness and relevance are paramount. You must actively use `searchfetch` (web search, web fetch) to research current documentation, verify tech stacks, and ensure the use of best practices. Use standard CLI package managers (such as `npm outdated`, `pip list --outdated`, or `cargo outdated -R`) to check for the latest versions of packages. Avoid deprecated features.
