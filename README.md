@@ -190,20 +190,25 @@ my-awesome-agents/
     ├── headers/
     │   ├── opencode/
     │   │   ├── leader.md      # Frontmatter for opencode
-    │   │   └── developer.md
+    │   │   ├── developer.md
+    │   │   └── researcher.md  # Web-only research subagent
     │   ├── gemini/
     │   │   ├── leader.md      # Frontmatter for gemini
-    │   │   └── developer.md
+    │   │   ├── developer.md
+    │   │   └── researcher.md
     │   └── claude/
     │       ├── leader.md      # Frontmatter for claude
-    │       └── developer.md
+    │       ├── developer.md
+    │       └── researcher.md
     └── prompts/
         ├── new/
         │   ├── leader.md      # Prompt body for "new" preset
-        │   └── developer.md
+        │   ├── developer.md
+        │   └── researcher.md
         └── continue/
             ├── leader.md      # Prompt body for "continue" preset
-            └── developer.md
+            ├── developer.md
+            └── researcher.md
 ```
 
 Then anyone can install your setup using:
@@ -258,6 +263,12 @@ You are the Leader agent. Your job is to orchestrate the development workflow...
 - Rule 2
 ```
 
+### Researcher Subagent
+
+Ramenos includes a hidden `researcher` subagent for internet work. The leader and developer agents are configured to delegate live web searches, website visits, latest documentation checks, and market facts to `@researcher` instead of using web/MCP tools directly. This keeps expensive primary-agent contexts small while still allowing source-grounded, current information.
+
+The `researcher` prompt requires Google-backed discovery, visited-source verification, concise citations, and no internal-knowledge answers.
+
 ---
 
 ## 🏗️ How It Works
@@ -280,7 +291,7 @@ You are the Leader agent. Your job is to orchestrate the development workflow...
 
 ## 🧠 Advanced: OpenCode & 9router Setup (for custom model)
 
-For users setting up an advanced local agent workflow with fallback models and web search capabilities, follow these steps to integrate OpenCode, `9router`, and MCP servers.
+For users setting up an advanced local agent workflow with fallback models and delegated web research, follow these steps to integrate OpenCode, `9router`, and the `searchfetch` MCP server.
 
 ### 1. Model Routing with 9router
 
@@ -313,6 +324,9 @@ Update your `opencode.json` file to point to your local 9router instance:
         },
         "developer": {
           "name": "developer"
+        },
+        "researcher": {
+          "name": "researcher"
         }
       }
     }
@@ -320,11 +334,15 @@ Update your `opencode.json` file to point to your local 9router instance:
 }
 ```
 
-### 3. Web Search & Context (MCP)
+Configure the `researcher` route to use a low-cost model. If you enable the commented `model: router/researcher` line in `agents/headers/opencode/researcher.md`, OpenCode will send web research tasks to that cheaper route while keeping the leader on a stronger model.
 
-Equip your agents with web search and up-to-date documentation scraping. Add the desired tools to your `opencode.json`.
+### 3. Web Research Subagent (MCP)
 
-**MCP `searchfetch` & `context7`**:
+Equip only the hidden `researcher` subagent with web search and website-fetching capability. The leader and developer agent files deny direct `searchfetch` access and instruct agents to delegate current internet facts to `@researcher`.
+
+Add the MCP servers to `opencode.json`; access is controlled per agent by the installed agent permissions.
+
+**MCP `searchfetch`**:
 ```json
 {
   "$schema": "https://opencode.ai/config.json",
@@ -332,14 +350,6 @@ Equip your agents with web search and up-to-date documentation scraping. Add the
     "searchfetch": {
       "type": "local",
       "command": ["npx", "-y", "searchfetch"],
-      "enabled": true
-    },
-    "context7": {
-      "type": "remote",
-      "url": "https://mcp.context7.com/mcp",
-      "headers": {
-        "CONTEXT7_API_KEY": "your_api_key_here"
-      },
       "enabled": true
     }
   }

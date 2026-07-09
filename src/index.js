@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
 import os from "os";
-import { execSync } from "child_process";
+import { execFileSync } from "child_process";
 import readline from "readline";
 
 export const RAMENOS_CACHE_DIR = path.join(os.homedir(), ".ramenos", "cache");
@@ -190,19 +190,31 @@ export function fetchRepo(repoConfig) {
 
   try {
     if (fs.existsSync(targetDir)) {
-      execSync(`git fetch --all`, { cwd: targetDir, stdio: "ignore" });
+      execFileSync("git", ["fetch", "--all"], {
+        cwd: targetDir,
+        stdio: "ignore",
+      });
       if (repoConfig.branch) {
-        execSync(`git reset --hard origin/${repoConfig.branch}`, {
+        execFileSync(
+          "git",
+          ["reset", "--hard", `origin/${repoConfig.branch}`],
+          {
+            cwd: targetDir,
+            stdio: "ignore",
+          },
+        );
+      } else {
+        execFileSync("git", ["reset", "--hard", "HEAD"], {
           cwd: targetDir,
           stdio: "ignore",
         });
-      } else {
-        execSync(`git reset --hard HEAD`, { cwd: targetDir, stdio: "ignore" });
-        execSync(`git pull`, { cwd: targetDir, stdio: "ignore" });
+        execFileSync("git", ["pull"], { cwd: targetDir, stdio: "ignore" });
       }
     } else {
-      const branchFlag = repoConfig.branch ? `-b ${repoConfig.branch}` : "";
-      execSync(`git clone ${branchFlag} ${repoConfig.url} ${targetDir}`, {
+      const cloneArgs = ["clone"];
+      if (repoConfig.branch) cloneArgs.push("-b", repoConfig.branch);
+      cloneArgs.push(repoConfig.url, targetDir);
+      execFileSync("git", cloneArgs, {
         stdio: "ignore",
       });
     }
@@ -220,6 +232,12 @@ export function fetchRepo(repoConfig) {
   }
 
   return sourcePath;
+}
+
+function unlinkIfExists(filePath) {
+  if (fs.lstatSync(filePath, { throwIfNoEntry: false })) {
+    fs.unlinkSync(filePath);
+  }
 }
 
 export function isStructuredSource(sourcePath) {
@@ -285,12 +303,7 @@ function installStructured(sourcePath, destDir, framework, preset) {
     const finalContent = combineAgentFile(headerContent, promptContent);
     const destFile = path.join(destDir, file);
 
-    if (
-      fs.existsSync(destFile) ||
-      fs.lstatSync(destFile, { throwIfNoEntry: false })
-    ) {
-      fs.unlinkSync(destFile);
-    }
+    unlinkIfExists(destFile);
 
     fs.writeFileSync(destFile, finalContent);
     console.log(colorize("green", `  ✓ Installed: ${file}`));
@@ -313,12 +326,7 @@ function installLegacy(sourcePath, destDir, options) {
 
     const destFile = path.join(destDir, file);
 
-    if (
-      fs.existsSync(destFile) ||
-      fs.lstatSync(destFile, { throwIfNoEntry: false })
-    ) {
-      fs.unlinkSync(destFile);
-    }
+    unlinkIfExists(destFile);
 
     try {
       if (options.copy) {

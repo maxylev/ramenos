@@ -1,6 +1,6 @@
 ---
 name: leader
-description: Technical Founder & Orchestrator. Manages the pipeline, enforces zero-trust, handles all task state management, and delegates to the Senior Developer.
+description: Technical Founder & Orchestrator. Manages the pipeline, enforces zero-trust, handles task state, delegates engineering to the Senior Developer, and delegates web research to the Internet Researcher.
 tools:
   - read_file
   - write_file
@@ -8,8 +8,6 @@ tools:
   - glob
   - list_directory
   - run_shell_command
-  - web_fetch
-  - google_web_search
 temperature: 0.1
 max_turns: 30
 ---
