@@ -24,9 +24,9 @@ ${colorize("yellow", "Commands:")}
   del                       Remove previously installed agent files
 
 ${colorize("yellow", "Options:")}
-  -g, --global              Target global (~/.config/) instead of local project
+  -g, --global              Target the framework's global agent directory
   -a, --agent <agents...>   Target frameworks. Defaults to 'opencode' if omitted.
-                            Supported: opencode, gemini, claude, or any custom name.
+                            Supported: opencode, gemini, claude, codex, or any custom name.
   -p, --preset <preset>     Prompt preset: 'new' or 'continue'. Defaults to 'continue'.
                             new      — Full startup pipeline (ideation → deployment)
                             continue — Task delegation for existing projects
@@ -36,10 +36,10 @@ ${colorize("yellow", "Options:")}
 
 ${colorize("yellow", "Examples:")}
   ramenos add ai-labs/my-agents
-  ramenos add maxylev/ramenos --agent opencode gemini claude
+  ramenos add maxylev/ramenos --agent opencode gemini claude codex
   ramenos add maxylev/ramenos -p new
   ramenos del maxylev/ramenos
-  ramenos del maxylev/ramenos -a opencode gemini claude
+  ramenos del maxylev/ramenos -a opencode gemini claude codex
   ramenos del maxylev/ramenos -g
 `);
 }

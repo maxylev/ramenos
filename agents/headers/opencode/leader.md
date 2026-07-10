@@ -2,7 +2,7 @@
 description: Technical Architect & Orchestrator. Owns high-level planning, structural design, and token-efficient task allocation. Delegates internet research to the Researcher subagent and coordinates parallel development streams across multiple agents.
 mode: primary
 color: "#a6f527"
-model: openai/gpt-5.5
+model: openai/gpt-5.6-sol
 temperature: 0.1
 permission:
   task: allow

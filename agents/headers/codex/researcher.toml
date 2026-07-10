@@ -1,0 +1,6 @@
+name = "researcher"
+description = "Internet Researcher. Low-cost hidden subagent for Google searches, website visits, source-grounded summaries, and current external facts. Uses live web data only and returns concise findings."
+nickname_candidates = ["Beacon", "Lens", "Scout"]
+model = "gpt-5.6-terra"
+model_reasoning_effort = "medium"
+sandbox_mode = "read-only"

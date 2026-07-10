@@ -7,7 +7,7 @@
 
 A lightning-fast, **zero-dependency** CLI to share and install AI multi-agent orchestration configurations directly from GitHub into your local workspace.
 
-Designed for modern AI coding assistants like [OpenCode](https://opencode.ai/), [Gemini CLI](https://github.com/google-gemini/gemini-cli), and [Claude Code](https://code.claude.com/). Bootstrapping an elite multi-agent AI team is now just one command away.
+Designed for modern AI coding assistants like [OpenCode](https://opencode.ai/), [Gemini CLI](https://github.com/google-gemini/gemini-cli), [Claude Code](https://code.claude.com/), and [Codex](https://developers.openai.com/codex/). Bootstrapping a focused multi-agent AI team is one command away.
 
 ---
 
@@ -33,7 +33,7 @@ Designed for modern AI coding assistants like [OpenCode](https://opencode.ai/), 
 - 🚀 **Zero Dependencies**: Built with native Node.js. Incredibly fast execution.
 - 🔗 **Smart Caching**: Uses local caching to safely manage agent files without cluttering your project.
 - 🐙 **Flexible Git Support**: Supports GitHub shorthand, raw HTTPS, SSH, and deep folder trees.
-- 🎯 **Multi-Framework**: Install to `.opencode/agents/`, `.gemini/agents/`, `.claude/agents/`, or any custom structure — all from a single command.
+- 🎯 **Multi-Framework**: Install to `.opencode/agents/`, `.gemini/agents/`, `.claude/agents/`, `.codex/agents/`, or any custom structure — all from a single command.
 - 📋 **Presets**: Choose between `new` (full startup pipeline) and `continue` (task delegation for existing projects).
 - 🧩 **Header + Prompt Architecture**: Framework-specific headers are combined with shared prompts at install time — no duplication.
 - 🗑️ **Clean Uninstall**: Remove agents with `ramenos del` using the same options.
@@ -49,7 +49,7 @@ No global installation is required! Run it directly via `npx` inside your projec
 npx ramenos add maxylev/ramenos
 
 # Add agents for all supported frameworks
-npx ramenos add maxylev/ramenos -a opencode gemini claude
+npx ramenos add maxylev/ramenos -a opencode gemini claude codex
 
 # Add agents for a new startup project
 npx ramenos add maxylev/ramenos -p new
@@ -65,7 +65,7 @@ To remove agents later:
 npx ramenos del maxylev/ramenos
 
 # Remove from all frameworks
-npx ramenos del maxylev/ramenos -a opencode gemini claude
+npx ramenos del maxylev/ramenos -a opencode gemini claude codex
 
 # Remove from global directory
 npx ramenos del maxylev/ramenos -g
@@ -77,9 +77,9 @@ npx ramenos del maxylev/ramenos -g
 
 ### Commands
 
-| Command | Description |
-| :--- | :--- |
-| `add <repository>` | Install agent files into your project |
+| Command            | Description                             |
+| :----------------- | :-------------------------------------- |
+| `add <repository>` | Install agent files into your project   |
 | `del <repository>` | Remove previously installed agent files |
 
 ### Options
@@ -88,9 +88,9 @@ npx ramenos del maxylev/ramenos -g
 Usage: ramenos <add|del> <repository> [options]
 
 Options:
-  -g, --global              Target global (~/.config/) instead of local project
+  -g, --global              Target the framework's global agent directory
   -a, --agent <agents...>   Target frameworks. Defaults to 'opencode'.
-                            Supported: opencode, gemini, claude, or any custom name.
+                            Supported: opencode, gemini, claude, codex, or any custom name.
   -p, --preset <preset>     Prompt preset: 'new' or 'continue'. Defaults to 'continue'.
                             new      — Full startup pipeline (ideation → deployment)
                             continue — Task delegation for existing projects
@@ -101,34 +101,40 @@ Options:
 
 ### Examples
 
-**Install for all three frameworks at once:**
+**Install for all supported frameworks at once:**
+
 ```bash
-npx ramenos add maxylev/ramenos -a opencode gemini claude
+npx ramenos add maxylev/ramenos -a opencode gemini claude codex
 ```
 
 **Start a new startup project from scratch:**
+
 ```bash
 npx ramenos add maxylev/ramenos -p new
 ```
 
 **Install for Gemini CLI with the continue preset:**
+
 ```bash
 npx ramenos add maxylev/ramenos -a gemini -p continue
 ```
 
 **Remove agents from a specific framework:**
+
 ```bash
 npx ramenos del maxylev/ramenos -a gemini
 ```
 
 **Remove all agents and clean up:**
+
 ```bash
-npx ramenos del maxylev/ramenos -a opencode gemini claude
+npx ramenos del maxylev/ramenos -a opencode gemini claude codex
 ```
 
 **CI/CD or Automated Scripting:**
+
 ```bash
-npx ramenos add maxylev/ramenos --yes -a opencode gemini claude
+npx ramenos add maxylev/ramenos --yes -a opencode gemini claude codex
 ```
 
 ---
@@ -137,12 +143,13 @@ npx ramenos add maxylev/ramenos --yes -a opencode gemini claude
 
 Ramenos knows the correct directory structure for popular AI tools:
 
-| Framework | Local Path | Global Path (`-g`) |
-| :--- | :--- | :--- |
-| `opencode` | `.opencode/agents/` | `~/.config/opencode/agents/` |
-| `gemini` | `.gemini/agents/` | `~/.gemini/agents/` |
-| `claude` | `.claude/agents/` | `~/.claude/agents/` |
-| *any custom* | `.<name>/agents/` | `~/.config/<name>/agents/` |
+| Framework    | Local Path          | Global Path (`-g`)           |
+| :----------- | :------------------ | :--------------------------- |
+| `opencode`   | `.opencode/agents/` | `~/.config/opencode/agents/` |
+| `gemini`     | `.gemini/agents/`   | `~/.gemini/agents/`          |
+| `claude`     | `.claude/agents/`   | `~/.claude/agents/`          |
+| `codex`      | `.codex/agents/`    | `~/.codex/agents/`           |
+| _any custom_ | `.<name>/agents/`   | `~/.config/<name>/agents/`   |
 
 ---
 
@@ -151,9 +158,11 @@ Ramenos knows the correct directory structure for popular AI tools:
 Presets control the system prompt that gets combined with the framework-specific header at install time.
 
 ### `continue` (default)
+
 For **existing projects** that need a leader/developer hierarchy. The developer reports to the leader until the user's assigned task is complete. No planning files, no phases — just task delegation and verification.
 
 ### `new`
+
 For **starting from scratch** — a full startup pipeline with phases: Ideation → Validation → Architecture → Planning → Implementation → Testing → Deployment. Uses `IMPLEMENTATION_PLAN.md` for state tracking.
 
 ---
@@ -163,16 +172,19 @@ For **starting from scratch** — a full startup pipeline with phases: Ideation 
 Ramenos looks for an `agents/` folder by default in the root of the repository, but supports deep links if you want to pull a specific sub-folder.
 
 **1. GitHub Shorthand**:
+
 ```bash
 npx ramenos add my-labs/my-awesome-agents
 ```
 
 **2. Direct Sub-folder Links**:
+
 ```bash
 npx ramenos add https://github.com/ai-labs/my-agents/tree/main/agents/orchestration
 ```
 
 **3. SSH Formats**:
+
 ```bash
 npx ramenos add git@github.com:my-company/internal-agents.git
 ```
@@ -196,10 +208,14 @@ my-awesome-agents/
     │   │   ├── leader.md      # Frontmatter for gemini
     │   │   ├── developer.md
     │   │   └── researcher.md
-    │   └── claude/
-    │       ├── leader.md      # Frontmatter for claude
-    │       ├── developer.md
-    │       └── researcher.md
+    │   ├── claude/
+    │   │   ├── leader.md      # Frontmatter for claude
+    │   │   ├── developer.md
+    │   │   └── researcher.md
+    │   └── codex/
+    │       ├── leader.toml    # Base Codex custom-agent config
+    │       ├── developer.toml
+    │       └── researcher.toml
     └── prompts/
         ├── new/
         │   ├── leader.md      # Prompt body for "new" preset
@@ -216,9 +232,10 @@ Then anyone can install your setup using:
 
 ### Header Files
 
-Header files contain **only the YAML frontmatter** (including `---` delimiters). Each framework has its own format:
+Header files contain only framework-specific configuration. OpenCode, Gemini, and Claude use YAML frontmatter with `---` delimiters. Codex uses a TOML base configuration; Ramenos adds the selected prompt as the required top-level `developer_instructions` field.
 
 **opencode** (`headers/opencode/leader.md`):
+
 ```yaml
 ---
 description: My leader agent description
@@ -229,6 +246,7 @@ temperature: 0.1
 ```
 
 **gemini** (`headers/gemini/leader.md`):
+
 ```yaml
 ---
 name: leader
@@ -241,6 +259,7 @@ tools:
 ```
 
 **claude** (`headers/claude/leader.md`):
+
 ```yaml
 ---
 name: leader
@@ -251,6 +270,19 @@ permissionMode: auto
 ---
 ```
 
+**codex** (`headers/codex/developer.toml`):
+
+```toml
+name = "developer"
+description = "Implementation-focused engineer for targeted code changes and tests."
+nickname_candidates = ["Builder", "Forge"]
+model = "gpt-5.6-terra"
+model_reasoning_effort = "medium"
+sandbox_mode = "workspace-write"
+```
+
+Do not add `developer_instructions` to a Codex header. Ramenos generates it from `prompts/<preset>/<agent>.md`. Codex custom agents inherit omitted configuration from the parent session, so model, reasoning, sandbox, MCP, and skill settings can be left out when inheritance is preferred.
+
 ### Prompt Files
 
 Prompt files contain **only the markdown body** (no frontmatter). They are shared across all frameworks:
@@ -259,32 +291,34 @@ Prompt files contain **only the markdown body** (no frontmatter). They are share
 You are the Leader agent. Your job is to orchestrate the development workflow...
 
 **RULES:**
+
 - Rule 1
 - Rule 2
 ```
 
 ### Researcher Subagent
 
-Ramenos includes a hidden `researcher` subagent for internet work. The leader and developer agents are configured to delegate live web searches, website visits, latest documentation checks, and market facts to `@researcher` instead of using web/MCP tools directly. This keeps expensive primary-agent contexts small while still allowing source-grounded, current information.
+Ramenos includes a focused `researcher` subagent for internet work. The leader and developer prompts delegate live web searches, documentation checks, and market facts to the researcher instead of filling their own context with web pages. Framework headers limit the researcher to read-only or web-focused capabilities where supported.
 
-The `researcher` prompt requires Google-backed discovery, visited-source verification, concise citations, and no internal-knowledge answers.
+The researcher prompt requires visited-source verification, concise citations, dates for time-sensitive claims, and clear disclosure when evidence cannot be verified.
+
+For Codex, custom agents are spawned agents rather than primary personas. If you spawn `leader` and expect it to delegate to `developer` or `researcher`, configure `agents.max_depth = 2` in Codex. Keep the default depth of `1` when the root session delegates directly to the developer and researcher agents.
 
 ---
 
 ## 🏗️ How It Works
 
 ### `add`
+
 1. **Fetch**: The repository is cloned (or updated) into `~/.ramenos/cache/`.
 2. **Detect**: If the source has `headers/` and `prompts/` subdirectories, structured mode is used.
-3. **Combine**: For each target framework, matching header and prompt files are combined:
-   - Header from `agents/headers/{framework}/{file}.md`
-   - Prompt from `agents/prompts/{preset}/{file}.md`
-   - Combined into a single `.md` file written to the target directory.
-4. **Install**: The final agent files are written to `.{framework}/agents/` in your project.
+3. **Combine**: For each target framework, matching header and prompt files are combined. Markdown/YAML targets produce `.md` files; Codex TOML headers produce `.toml` files with generated `developer_instructions`.
+4. **Install**: Final agent files are written to the framework's project or global agent directory.
 
 ### `del`
+
 1. **Fetch**: The repository is fetched (same as `add`) to determine which files were installed.
-2. **Remove**: For each target framework, the matching agent files are deleted from `.{framework}/agents/`.
+2. **Remove**: For each target framework, matching agent files are deleted from its selected project or global agent directory.
 3. **Cleanup**: If the agents directory is empty after removal, it is deleted automatically.
 
 ---
@@ -302,7 +336,7 @@ npm install -g 9router
 9router
 ```
 
-*Configure `9router` via the UI at `http://localhost:20128` to create model combos with fallback support (e.g., configuring `leader` and `developer` endpoints).*
+_Configure `9router` via the UI at `http://localhost:20128` to create model combos with fallback support (e.g., configuring `leader` and `developer` endpoints)._
 
 ### 2. OpenCode Configuration
 
@@ -334,7 +368,7 @@ Update your `opencode.json` file to point to your local 9router instance:
 }
 ```
 
-Configure the `researcher` route to use a low-cost model. If you enable the commented `model: router/researcher` line in `agents/headers/opencode/researcher.md`, OpenCode will send web research tasks to that cheaper route while keeping the leader on a stronger model.
+Configure the `researcher` route to use a lower-cost model, then set `model: router/researcher` in `agents/headers/opencode/researcher.md` if you want installed researcher agents to use that route.
 
 ### 3. Web Research Subagent (MCP)
 
@@ -343,6 +377,7 @@ Equip only the hidden `researcher` subagent with web search and website-fetching
 Add the MCP servers to `opencode.json`; access is controlled per agent by the installed agent permissions.
 
 **MCP `searchfetch`**:
+
 ```json
 {
   "$schema": "https://opencode.ai/config.json",

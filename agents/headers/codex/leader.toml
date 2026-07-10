@@ -1,0 +1,6 @@
+name = "leader"
+description = "Technical Architect & Orchestrator. Owns high-level planning, structural design, and token-efficient task allocation. Delegates internet research to the Researcher subagent and coordinates parallel development streams across multiple agents."
+nickname_candidates = ["Atlas", "Conductor", "Navigator"]
+model = "gpt-5.6"
+model_reasoning_effort = "high"
+sandbox_mode = "workspace-write"

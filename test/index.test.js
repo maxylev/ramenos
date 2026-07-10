@@ -14,6 +14,7 @@ import {
   removeAgents,
   isStructuredSource,
   combineAgentFile,
+  combineCodexAgentFile,
   VALID_PRESETS,
 } from "../src/index.js";
 
@@ -51,6 +52,12 @@ test("getTargetPaths: claude uses known paths", () => {
     paths.local,
     path.join(process.cwd(), ".claude", "agents"),
   );
+});
+
+test("getTargetPaths: codex uses known paths", () => {
+  const paths = getTargetPaths("codex");
+  assert.strictEqual(paths.global, path.join(os.homedir(), ".codex", "agents"));
+  assert.strictEqual(paths.local, path.join(process.cwd(), ".codex", "agents"));
 });
 
 test("getTargetPaths: unknown framework falls back to generic", () => {
@@ -120,7 +127,14 @@ test("parseArgs: del command", () => {
 });
 
 test("parseArgs: del with flags", () => {
-  const opts = parseArgs(["del", "maxylev/ramenos", "-g", "-a", "gemini", "claude"]);
+  const opts = parseArgs([
+    "del",
+    "maxylev/ramenos",
+    "-g",
+    "-a",
+    "gemini",
+    "claude",
+  ]);
   assert.strictEqual(opts.command, "del");
   assert.strictEqual(opts.global, true);
   assert.deepStrictEqual(opts.agent, ["gemini", "claude"]);
@@ -194,6 +208,38 @@ test("combineAgentFile: header only when no prompt", () => {
   assert.strictEqual(result, "---\nname: test\n---\n");
 });
 
+test("combineCodexAgentFile: emits TOML developer instructions", () => {
+  const header = 'name = "test"\ndescription = "Test agent"';
+  const result = combineCodexAgentFile(
+    header,
+    'Work carefully.\nPreserve \\ paths, "quotes", and \u007f.',
+  );
+  assert.strictEqual(
+    result,
+    'developer_instructions = "Work carefully.\\nPreserve \\\\ paths, \\"quotes\\", and \\u007F."\n\nname = "test"\ndescription = "Test agent"\n',
+  );
+});
+
+test("combineCodexAgentFile: keeps instructions above TOML tables", () => {
+  const header =
+    'name = "test"\ndescription = "Test agent"\n\n[mcp_servers.docs]\nurl = "https://example.com"';
+  const result = combineCodexAgentFile(header, "Use the docs server.");
+  assert.ok(
+    result.startsWith('developer_instructions = "Use the docs server."'),
+  );
+  assert.ok(
+    result.indexOf("developer_instructions") <
+      result.indexOf("[mcp_servers.docs]"),
+  );
+});
+
+test("combineCodexAgentFile: rejects a missing prompt", () => {
+  assert.throws(
+    () => combineCodexAgentFile('name = "test"', ""),
+    /require a non-empty developer prompt/,
+  );
+});
+
 test("isStructuredSource: detects structured directory", () => {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "ramenos-test-"));
   fs.mkdirSync(path.join(tmpDir, "headers"));
@@ -222,10 +268,7 @@ test("installAgents: structured mode generates combined files", async () => {
     path.join(headersDir, "leader.md"),
     "---\ndescription: Test Leader\n---",
   );
-  fs.writeFileSync(
-    path.join(promptsDir, "leader.md"),
-    "You are the leader.",
-  );
+  fs.writeFileSync(path.join(promptsDir, "leader.md"), "You are the leader.");
 
   const destDir = path.join(tmpDir, "dest", ".opencode", "agents");
 
@@ -265,6 +308,51 @@ test("installAgents: rejects invalid preset", async () => {
     { message: /Invalid preset 'invalid'/ },
   );
 
+  fs.rmSync(tmpDir, { recursive: true });
+});
+
+test("installAgents: structured mode generates Codex TOML files", async () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "ramenos-test-"));
+  const sourcePath = path.join(tmpDir, "source", "agents");
+  const headersDir = path.join(sourcePath, "headers", "codex");
+  const promptsDir = path.join(sourcePath, "prompts", "continue");
+  fs.mkdirSync(headersDir, { recursive: true });
+  fs.mkdirSync(promptsDir, { recursive: true });
+  fs.writeFileSync(
+    path.join(headersDir, "developer.toml"),
+    'name = "developer"\ndescription = "Test developer"',
+  );
+  fs.writeFileSync(
+    path.join(promptsDir, "developer.md"),
+    "Implement the task.",
+  );
+
+  const destDir = path.join(tmpDir, "dest", ".codex", "agents");
+  await installAgents(sourcePath, {
+    agent: ["codex"],
+    preset: "continue",
+    global: false,
+    yes: true,
+    copy: false,
+    destOverride: destDir,
+  });
+
+  const installedFile = path.join(destDir, "developer.toml");
+  assert.ok(fs.existsSync(installedFile));
+  const content = fs.readFileSync(installedFile, "utf-8");
+  assert.ok(
+    content.startsWith('developer_instructions = "Implement the task."'),
+  );
+  assert.ok(content.includes("Implement the task."));
+
+  await removeAgents(sourcePath, {
+    agent: ["codex"],
+    preset: "continue",
+    global: false,
+    yes: true,
+    destOverride: destDir,
+  });
+  assert.ok(!fs.existsSync(installedFile));
   fs.rmSync(tmpDir, { recursive: true });
 });
 

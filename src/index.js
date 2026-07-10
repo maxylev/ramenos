@@ -22,6 +22,11 @@ const FRAMEWORK_PATHS = {
   opencode: { global: ".config/opencode", local: ".opencode" },
   gemini: { global: ".gemini", local: ".gemini" },
   claude: { global: ".claude", local: ".claude" },
+  codex: { global: ".codex", local: ".codex" },
+};
+
+const FRAMEWORK_HEADER_EXTENSIONS = {
+  codex: ".toml",
 };
 
 export function colorize(color, text) {
@@ -258,6 +263,23 @@ export function combineAgentFile(headerContent, promptContent) {
   return header + "\n\n" + prompt + "\n";
 }
 
+export function combineCodexAgentFile(headerContent, promptContent) {
+  const header = headerContent.trimEnd();
+  const prompt = promptContent.trim();
+  if (!prompt) {
+    throw new Error("Codex agents require a non-empty developer prompt.");
+  }
+  const instructions = JSON.stringify(prompt).replaceAll("\u007f", "\\u007F");
+  return `developer_instructions = ${instructions}\n\n${header}\n`;
+}
+
+function getFrameworkHeaderFiles(headersDir, framework) {
+  const extension = FRAMEWORK_HEADER_EXTENSIONS[framework] || ".md";
+  return fs
+    .readdirSync(headersDir)
+    .filter((file) => file.endsWith(extension) && !file.startsWith("."));
+}
+
 function installStructured(sourcePath, destDir, framework, preset) {
   const headersDir = path.join(sourcePath, "headers", framework);
   const promptsDir = path.join(sourcePath, "prompts", preset);
@@ -282,25 +304,26 @@ function installStructured(sourcePath, destDir, framework, preset) {
     return 0;
   }
 
-  const headerFiles = fs
-    .readdirSync(headersDir)
-    .filter((f) => f.endsWith(".md") && !f.startsWith("."));
+  const headerFiles = getFrameworkHeaderFiles(headersDir, framework);
 
   let installedCount = 0;
 
   for (const file of headerFiles) {
-    const headerContent = fs.readFileSync(
-      path.join(headersDir, file),
-      "utf-8",
+    const headerContent = fs.readFileSync(path.join(headersDir, file), "utf-8");
+    const promptFile = path.join(
+      promptsDir,
+      `${path.basename(file, path.extname(file))}.md`,
     );
-    const promptFile = path.join(promptsDir, file);
 
     let promptContent = "";
     if (fs.existsSync(promptFile)) {
       promptContent = fs.readFileSync(promptFile, "utf-8");
     }
 
-    const finalContent = combineAgentFile(headerContent, promptContent);
+    const finalContent =
+      framework === "codex"
+        ? combineCodexAgentFile(headerContent, promptContent)
+        : combineAgentFile(headerContent, promptContent);
     const destFile = path.join(destDir, file);
 
     unlinkIfExists(destFile);
@@ -368,20 +391,15 @@ export async function installAgents(sourcePath, options) {
   }
 
   if (structured) {
-    console.log(
-      colorize("cyan", `📋 Preset: ${options.preset}`),
-    );
+    console.log(colorize("cyan", `📋 Preset: ${options.preset}`));
   }
 
   for (const framework of targetFrameworks) {
     const paths = getTargetPaths(framework);
     const destDir =
-      options.destOverride ||
-      (options.global ? paths.global : paths.local);
+      options.destOverride || (options.global ? paths.global : paths.local);
 
-    console.log(
-      colorize("blue", `\n🚀 Target: [${framework}] -> ${destDir}`),
-    );
+    console.log(colorize("blue", `\n🚀 Target: [${framework}] -> ${destDir}`));
 
     if (!options.yes) {
       const isConfirmed = await askConfirm(
@@ -412,7 +430,10 @@ export async function installAgents(sourcePath, options) {
 
     if (installedCount === 0) {
       console.log(
-        colorize("yellow", `  ⚠️  No agent files generated for '${framework}'.`),
+        colorize(
+          "yellow",
+          `  ⚠️  No agent files generated for '${framework}'.`,
+        ),
       );
     }
   }
@@ -422,16 +443,12 @@ function getAgentFileNames(sourcePath, framework, preset) {
   if (isStructuredSource(sourcePath)) {
     const headersDir = path.join(sourcePath, "headers", framework);
     if (!fs.existsSync(headersDir)) return [];
-    return fs
-      .readdirSync(headersDir)
-      .filter((f) => f.endsWith(".md") && !f.startsWith("."));
+    return getFrameworkHeaderFiles(headersDir, framework);
   }
 
   return fs
     .readdirSync(sourcePath)
-    .filter(
-      (f) => !f.startsWith(".") && f !== "headers" && f !== "prompts",
-    )
+    .filter((f) => !f.startsWith(".") && f !== "headers" && f !== "prompts")
     .filter((f) => {
       const p = path.join(sourcePath, f);
       return fs.existsSync(p) && !fs.statSync(p).isDirectory();
@@ -446,17 +463,12 @@ export async function removeAgents(sourcePath, options) {
   for (const framework of targetFrameworks) {
     const paths = getTargetPaths(framework);
     const destDir =
-      options.destOverride ||
-      (options.global ? paths.global : paths.local);
+      options.destOverride || (options.global ? paths.global : paths.local);
 
-    console.log(
-      colorize("blue", `\n🗑️  Target: [${framework}] -> ${destDir}`),
-    );
+    console.log(colorize("blue", `\n🗑️  Target: [${framework}] -> ${destDir}`));
 
     if (!fs.existsSync(destDir)) {
-      console.log(
-        colorize("gray", `  Directory does not exist. Skipping.`),
-      );
+      console.log(colorize("gray", `  Directory does not exist. Skipping.`));
       continue;
     }
 
