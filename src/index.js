@@ -378,6 +378,50 @@ function installLegacy(sourcePath, destDir, options) {
   return installedCount;
 }
 
+export function ensureLocalGitignore(destDir) {
+  const rootDir = path.dirname(destDir);
+  const gitignorePath = path.join(rootDir, ".gitignore");
+
+  const lines = fs.existsSync(gitignorePath)
+    ? fs.readFileSync(gitignorePath, "utf-8").split(/\r?\n/)
+    : [];
+
+  const alreadyIgnored = lines.some((line) => {
+    const trimmed = line.trim();
+    return trimmed === "agents" || trimmed === "agents/";
+  });
+  if (alreadyIgnored) return;
+
+  while (lines.length > 0 && lines[lines.length - 1] === "") {
+    lines.pop();
+  }
+
+  fs.mkdirSync(rootDir, { recursive: true });
+  lines.push("agents");
+  fs.writeFileSync(gitignorePath, lines.join("\n") + "\n");
+}
+
+export function removeLocalGitignore(destDir) {
+  const gitignorePath = path.join(path.dirname(destDir), ".gitignore");
+  if (!fs.existsSync(gitignorePath)) return;
+
+  const lines = fs.readFileSync(gitignorePath, "utf-8").split(/\r?\n/);
+  const remaining = lines.filter((line) => {
+    const trimmed = line.trim();
+    return trimmed !== "agents" && trimmed !== "agents/";
+  });
+
+  while (remaining.length > 0 && remaining[remaining.length - 1] === "") {
+    remaining.pop();
+  }
+
+  if (remaining.length === 0) {
+    fs.unlinkSync(gitignorePath);
+  } else {
+    fs.writeFileSync(gitignorePath, remaining.join("\n") + "\n");
+  }
+}
+
 export async function installAgents(sourcePath, options) {
   const targetFrameworks =
     options.agent.length > 0 ? options.agent : ["opencode"];
@@ -435,6 +479,11 @@ export async function installAgents(sourcePath, options) {
           `  ⚠️  No agent files generated for '${framework}'.`,
         ),
       );
+      continue;
+    }
+
+    if (!options.global) {
+      ensureLocalGitignore(destDir);
     }
   }
 }
@@ -511,6 +560,10 @@ export async function removeAgents(sourcePath, options) {
     if (remaining.length === 0) {
       fs.rmSync(destDir, { recursive: true });
       console.log(colorize("gray", `  Removed empty directory.`));
+    }
+
+    if (!options.global) {
+      removeLocalGitignore(destDir);
     }
 
     if (removedCount === 0) {

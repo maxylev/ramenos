@@ -15,6 +15,8 @@ import {
   isStructuredSource,
   combineAgentFile,
   combineCodexAgentFile,
+  ensureLocalGitignore,
+  removeLocalGitignore,
   VALID_PRESETS,
 } from "../src/index.js";
 
@@ -287,6 +289,204 @@ test("installAgents: structured mode generates combined files", async () => {
   const content = fs.readFileSync(installedFile, "utf-8");
   assert.ok(content.startsWith("---\ndescription: Test Leader\n---"));
   assert.ok(content.includes("You are the leader."));
+
+  fs.rmSync(tmpDir, { recursive: true });
+});
+
+test("installAgents: creates local .gitignore ignoring agents", async () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "ramenos-test-"));
+
+  const sourcePath = path.join(tmpDir, "source", "agents");
+  const headersDir = path.join(sourcePath, "headers", "opencode");
+  const promptsDir = path.join(sourcePath, "prompts", "continue");
+  fs.mkdirSync(headersDir, { recursive: true });
+  fs.mkdirSync(promptsDir, { recursive: true });
+  fs.writeFileSync(path.join(headersDir, "leader.md"), "---\n---");
+  fs.writeFileSync(path.join(promptsDir, "leader.md"), "prompt");
+
+  const destDir = path.join(tmpDir, "dest", ".opencode", "agents");
+  await installAgents(sourcePath, {
+    agent: ["opencode"],
+    preset: "continue",
+    global: false,
+    yes: true,
+    copy: false,
+    destOverride: destDir,
+  });
+
+  const gitignore = path.join(tmpDir, "dest", ".opencode", ".gitignore");
+  assert.ok(fs.existsSync(gitignore));
+  assert.strictEqual(fs.readFileSync(gitignore, "utf-8"), "agents\n");
+
+  fs.rmSync(tmpDir, { recursive: true });
+});
+
+test("installAgents: skips .gitignore for global installs", async () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "ramenos-test-"));
+
+  const sourcePath = path.join(tmpDir, "source", "agents");
+  const headersDir = path.join(sourcePath, "headers", "opencode");
+  const promptsDir = path.join(sourcePath, "prompts", "continue");
+  fs.mkdirSync(headersDir, { recursive: true });
+  fs.mkdirSync(promptsDir, { recursive: true });
+  fs.writeFileSync(path.join(headersDir, "leader.md"), "---\n---");
+  fs.writeFileSync(path.join(promptsDir, "leader.md"), "prompt");
+
+  const destDir = path.join(tmpDir, "dest", ".opencode", "agents");
+  await installAgents(sourcePath, {
+    agent: ["opencode"],
+    preset: "continue",
+    global: true,
+    yes: true,
+    copy: false,
+    destOverride: destDir,
+  });
+
+  assert.ok(!fs.existsSync(path.join(tmpDir, "dest", ".opencode", ".gitignore")));
+
+  fs.rmSync(tmpDir, { recursive: true });
+});
+
+test("installAgents: merges with existing .gitignore without duplicating", async () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "ramenos-test-"));
+
+  const sourcePath = path.join(tmpDir, "source", "agents");
+  const headersDir = path.join(sourcePath, "headers", "opencode");
+  const promptsDir = path.join(sourcePath, "prompts", "continue");
+  fs.mkdirSync(headersDir, { recursive: true });
+  fs.mkdirSync(promptsDir, { recursive: true });
+  fs.writeFileSync(path.join(headersDir, "leader.md"), "---\n---");
+  fs.writeFileSync(path.join(promptsDir, "leader.md"), "prompt");
+
+  const rootDir = path.join(tmpDir, "dest", ".opencode");
+  fs.mkdirSync(rootDir, { recursive: true });
+  fs.writeFileSync(path.join(rootDir, ".gitignore"), "node_modules\n");
+
+  const destDir = path.join(rootDir, "agents");
+  const opts = {
+    agent: ["opencode"],
+    preset: "continue",
+    global: false,
+    yes: true,
+    copy: false,
+    destOverride: destDir,
+  };
+
+  await installAgents(sourcePath, opts);
+  await installAgents(sourcePath, opts);
+
+  assert.strictEqual(
+    fs.readFileSync(path.join(rootDir, ".gitignore"), "utf-8"),
+    "node_modules\nagents\n",
+  );
+
+  fs.rmSync(tmpDir, { recursive: true });
+});
+
+test("removeAgents: deletes .gitignore when only agents line remains", async () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "ramenos-test-"));
+
+  const sourcePath = path.join(tmpDir, "source", "agents");
+  const headersDir = path.join(sourcePath, "headers", "opencode");
+  const promptsDir = path.join(sourcePath, "prompts", "continue");
+  fs.mkdirSync(headersDir, { recursive: true });
+  fs.mkdirSync(promptsDir, { recursive: true });
+  fs.writeFileSync(path.join(headersDir, "leader.md"), "---\n---");
+  fs.writeFileSync(path.join(promptsDir, "leader.md"), "prompt");
+
+  const rootDir = path.join(tmpDir, "dest", ".opencode");
+  const destDir = path.join(rootDir, "agents");
+
+  await installAgents(sourcePath, {
+    agent: ["opencode"],
+    preset: "continue",
+    global: false,
+    yes: true,
+    copy: false,
+    destOverride: destDir,
+  });
+  assert.ok(fs.existsSync(path.join(rootDir, ".gitignore")));
+
+  await removeAgents(sourcePath, {
+    agent: ["opencode"],
+    preset: "continue",
+    global: false,
+    yes: true,
+    destOverride: destDir,
+  });
+
+  assert.ok(!fs.existsSync(path.join(rootDir, ".gitignore")));
+
+  fs.rmSync(tmpDir, { recursive: true });
+});
+
+test("removeAgents: preserves other .gitignore entries", async () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "ramenos-test-"));
+
+  const sourcePath = path.join(tmpDir, "source", "agents");
+  const headersDir = path.join(sourcePath, "headers", "opencode");
+  const promptsDir = path.join(sourcePath, "prompts", "continue");
+  fs.mkdirSync(headersDir, { recursive: true });
+  fs.mkdirSync(promptsDir, { recursive: true });
+  fs.writeFileSync(path.join(headersDir, "leader.md"), "---\n---");
+  fs.writeFileSync(path.join(promptsDir, "leader.md"), "prompt");
+
+  const rootDir = path.join(tmpDir, "dest", ".opencode");
+  fs.mkdirSync(rootDir, { recursive: true });
+  fs.writeFileSync(path.join(rootDir, ".gitignore"), "node_modules\nagents\n");
+
+  const destDir = path.join(rootDir, "agents");
+
+  await installAgents(sourcePath, {
+    agent: ["opencode"],
+    preset: "continue",
+    global: false,
+    yes: true,
+    copy: false,
+    destOverride: destDir,
+  });
+
+  await removeAgents(sourcePath, {
+    agent: ["opencode"],
+    preset: "continue",
+    global: false,
+    yes: true,
+    destOverride: destDir,
+  });
+
+  assert.ok(fs.existsSync(path.join(rootDir, ".gitignore")));
+  assert.strictEqual(
+    fs.readFileSync(path.join(rootDir, ".gitignore"), "utf-8"),
+    "node_modules\n",
+  );
+
+  fs.rmSync(tmpDir, { recursive: true });
+});
+
+test("ensureLocalGitignore: no-op when agents already ignored", () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "ramenos-test-"));
+  const rootDir = path.join(tmpDir, ".opencode");
+  fs.mkdirSync(rootDir, { recursive: true });
+  fs.writeFileSync(path.join(rootDir, ".gitignore"), "agents/\n");
+
+  ensureLocalGitignore(path.join(rootDir, "agents"));
+
+  assert.strictEqual(
+    fs.readFileSync(path.join(rootDir, ".gitignore"), "utf-8"),
+    "agents/\n",
+  );
+
+  fs.rmSync(tmpDir, { recursive: true });
+});
+
+test("removeLocalGitignore: no-op when file does not exist", () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "ramenos-test-"));
+  const rootDir = path.join(tmpDir, ".opencode");
+  fs.mkdirSync(rootDir, { recursive: true });
+
+  removeLocalGitignore(path.join(rootDir, "agents"));
+
+  assert.ok(!fs.existsSync(path.join(rootDir, ".gitignore")));
 
   fs.rmSync(tmpDir, { recursive: true });
 });
