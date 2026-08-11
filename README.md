@@ -37,7 +37,7 @@ Designed for modern AI coding assistants like [OpenCode](https://opencode.ai/), 
 - 📋 **Presets**: Choose between `new` (full startup pipeline) and `continue` (task delegation for existing projects).
 - 🧩 **Header + Prompt Architecture**: Framework-specific headers are combined with shared prompts at install time — no duplication.
 - 🗑️ **Clean Uninstall**: Remove agents with `ramenos del` using the same options.
-- 🚫 **Git-Friendly**: Local installs auto-add a `.gitignore` (containing `agents`) in each framework config directory, so generated agent files stay out of version control.
+- 🚫 **Git-Friendly**: Local installs auto-add a `.gitignore` (containing `agents` and `.gitignore`) in each framework config directory, so generated agent files stay out of version control.
 
 ---
 
@@ -152,7 +152,7 @@ Ramenos knows the correct directory structure for popular AI tools:
 | `codex`      | `.codex/agents/`    | `~/.codex/agents/`           |
 | _any custom_ | `.<name>/agents/`   | `~/.config/<name>/agents/`   |
 
-For **local** installs, Ramenos automatically creates a `.gitignore` inside the framework config directory (e.g. `.opencode/.gitignore`) containing `agents`, so installed agent files are not tracked by git. It merges with an existing `.gitignore` and is cleaned up on `del`.
+For **local** installs, Ramenos automatically creates a `.gitignore` inside the framework config directory (e.g. `.opencode/.gitignore`) containing `agents` and `.gitignore`, so installed agent files are not tracked by git. It merges with an existing `.gitignore` and is cleaned up on `del`.
 
 ---
 
@@ -317,13 +317,13 @@ For Codex, custom agents are spawned agents rather than primary personas. If you
 2. **Detect**: If the source has `headers/` and `prompts/` subdirectories, structured mode is used.
 3. **Combine**: For each target framework, matching header and prompt files are combined. Markdown/YAML targets produce `.md` files; Codex TOML headers produce `.toml` files with generated `developer_instructions`.
 4. **Install**: Final agent files are written to the framework's project or global agent directory.
-5. **Git ignore**: For local installs, a `.gitignore` (containing `agents`) is created or updated in the framework config directory, e.g. `.opencode/.gitignore`.
+5. **Git ignore**: For local installs, a `.gitignore` (containing `agents` and `.gitignore`) is created or updated in the framework config directory, e.g. `.opencode/.gitignore`.
 
 ### `del`
 
 1. **Fetch**: The repository is fetched (same as `add`) to determine which files were installed.
 2. **Remove**: For each target framework, matching agent files are deleted from its selected project or global agent directory.
-3. **Cleanup**: If the agents directory is empty after removal, it is deleted automatically. The `agents` entry is also removed from the framework's `.gitignore` (the file itself is deleted when nothing else is in it).
+3. **Cleanup**: If the agents directory is empty after removal, it is deleted automatically. The `agents` and `.gitignore` entries are also removed from the framework's `.gitignore` (the file itself is deleted when nothing else is in it).
 
 ---
 

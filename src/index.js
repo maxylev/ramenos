@@ -378,6 +378,8 @@ function installLegacy(sourcePath, destDir, options) {
   return installedCount;
 }
 
+const GITIGNORE_ENTRIES = ["agents", ".gitignore"];
+
 export function ensureLocalGitignore(destDir) {
   const rootDir = path.dirname(destDir);
   const gitignorePath = path.join(rootDir, ".gitignore");
@@ -386,18 +388,28 @@ export function ensureLocalGitignore(destDir) {
     ? fs.readFileSync(gitignorePath, "utf-8").split(/\r?\n/)
     : [];
 
-  const alreadyIgnored = lines.some((line) => {
-    const trimmed = line.trim();
-    return trimmed === "agents" || trimmed === "agents/";
-  });
-  if (alreadyIgnored) return;
-
   while (lines.length > 0 && lines[lines.length - 1] === "") {
     lines.pop();
   }
 
+  const present = new Set(
+    lines
+      .map((line) => line.trim())
+      .filter((line) => line !== "")
+      .map((line) => (line === "agents/" ? "agents" : line)),
+  );
+
+  let changed = false;
+  for (const entry of GITIGNORE_ENTRIES) {
+    if (!present.has(entry)) {
+      lines.push(entry);
+      changed = true;
+    }
+  }
+
+  if (!changed) return;
+
   fs.mkdirSync(rootDir, { recursive: true });
-  lines.push("agents");
   fs.writeFileSync(gitignorePath, lines.join("\n") + "\n");
 }
 
@@ -408,7 +420,9 @@ export function removeLocalGitignore(destDir) {
   const lines = fs.readFileSync(gitignorePath, "utf-8").split(/\r?\n/);
   const remaining = lines.filter((line) => {
     const trimmed = line.trim();
-    return trimmed !== "agents" && trimmed !== "agents/";
+    return (
+      trimmed !== "agents" && trimmed !== "agents/" && trimmed !== ".gitignore"
+    );
   });
 
   while (remaining.length > 0 && remaining[remaining.length - 1] === "") {
