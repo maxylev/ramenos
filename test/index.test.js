@@ -293,7 +293,7 @@ test("installAgents: structured mode generates combined files", async () => {
   fs.rmSync(tmpDir, { recursive: true });
 });
 
-test("installAgents: creates local .gitignore ignoring agents", async () => {
+test("installAgents: creates local .gitignore ignoring everything", async () => {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "ramenos-test-"));
 
   const sourcePath = path.join(tmpDir, "source", "agents");
@@ -316,7 +316,7 @@ test("installAgents: creates local .gitignore ignoring agents", async () => {
 
   const gitignore = path.join(tmpDir, "dest", ".opencode", ".gitignore");
   assert.ok(fs.existsSync(gitignore));
-  assert.strictEqual(fs.readFileSync(gitignore, "utf-8"), "agents\n.gitignore\n");
+  assert.strictEqual(fs.readFileSync(gitignore, "utf-8"), "*\n");
 
   fs.rmSync(tmpDir, { recursive: true });
 });
@@ -377,7 +377,7 @@ test("installAgents: merges with existing .gitignore without duplicating", async
 
   assert.strictEqual(
     fs.readFileSync(path.join(rootDir, ".gitignore"), "utf-8"),
-    "node_modules\nagents\n.gitignore\n",
+    "node_modules\n*\n",
   );
 
   fs.rmSync(tmpDir, { recursive: true });
@@ -457,29 +457,29 @@ test("removeAgents: preserves other .gitignore entries", async () => {
   assert.ok(fs.existsSync(path.join(rootDir, ".gitignore")));
   assert.strictEqual(
     fs.readFileSync(path.join(rootDir, ".gitignore"), "utf-8"),
-    "node_modules\n",
+    "node_modules\nagents\n",
   );
 
   fs.rmSync(tmpDir, { recursive: true });
 });
 
-test("ensureLocalGitignore: no-op when both entries already present", () => {
+test("ensureLocalGitignore: no-op when '*' already present", () => {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "ramenos-test-"));
   const rootDir = path.join(tmpDir, ".opencode");
   fs.mkdirSync(rootDir, { recursive: true });
-  fs.writeFileSync(path.join(rootDir, ".gitignore"), "agents\n.gitignore\n");
+  fs.writeFileSync(path.join(rootDir, ".gitignore"), "*\n");
 
   ensureLocalGitignore(path.join(rootDir, "agents"));
 
   assert.strictEqual(
     fs.readFileSync(path.join(rootDir, ".gitignore"), "utf-8"),
-    "agents\n.gitignore\n",
+    "*\n",
   );
 
   fs.rmSync(tmpDir, { recursive: true });
 });
 
-test("ensureLocalGitignore: adds missing .gitignore entry", () => {
+test("ensureLocalGitignore: adds missing '*' entry", () => {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "ramenos-test-"));
   const rootDir = path.join(tmpDir, ".opencode");
   fs.mkdirSync(rootDir, { recursive: true });
@@ -489,7 +489,7 @@ test("ensureLocalGitignore: adds missing .gitignore entry", () => {
 
   assert.strictEqual(
     fs.readFileSync(path.join(rootDir, ".gitignore"), "utf-8"),
-    "agents/\n.gitignore\n",
+    "agents/\n*\n",
   );
 
   fs.rmSync(tmpDir, { recursive: true });

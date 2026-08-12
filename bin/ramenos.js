@@ -34,9 +34,9 @@ ${colorize("yellow", "Options:")}
   -y, --yes                 Skip all confirmation prompts
   -h, --help                Display this help message
 
-Note: Local installs also add a '.gitignore' (containing 'agents' and
-'.gitignore') inside the framework config directory, e.g. .opencode/.gitignore,
-to keep agent files out of version control. Removed again on 'del'.
+Note: Local installs also add a '.gitignore' (containing '*') inside the framework
+config directory, e.g. .opencode/.gitignore, to keep agent files out of version
+control. Removed again on 'del'.
 
 ${colorize("yellow", "Examples:")}
   ramenos add ai-labs/my-agents
